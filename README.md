@@ -102,6 +102,10 @@ Untuk deployment server (Render/Railway/VPS) gunakan source ini dan ikuti langka
 - `php artisan migrate --force`
 - `npm run build` (atau build saat CI)
 
+Panduan deploy VPS domain `tg.hpulsa.com`:
+
+`deploy/vps/VPS_DEPLOY.md`
+
 ## Catatan GitHub Pages
 
 GitHub Pages hanya untuk static site, sedangkan aplikasi ini membutuhkan runtime PHP + database.  
