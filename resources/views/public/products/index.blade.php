@@ -345,13 +345,13 @@
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="realme"><img src="{{ asset('assets/brand-logos/realme.svg') }}" alt="Realme"><span>Realme</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="redmi"><img src="{{ asset('assets/brand-logos/redmi.svg') }}" alt="Redmi"><span>Redmi</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="poco"><img src="{{ asset('assets/brand-logos/poco.svg') }}" alt="Poco"><span>Poco</span></button>
-                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="xiaomi"><img src="{{ asset('assets/brand-logos/xiaomi.svg') }}" alt="Xiaomi"><span>Xiaomi</span></button>
+                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="xiaomi"><img src="{{ asset('assets/brand-logos/xiaomi.svg') }}?v=20260412b" alt="Xiaomi"><span>Xiaomi</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="oppo"><img src="{{ asset('assets/brand-logos/oppo.svg') }}" alt="Oppo"><span>Oppo</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="vivo"><img src="{{ asset('assets/brand-logos/vivo.svg') }}" alt="Vivo"><span>Vivo</span></button>
-                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="infinix"><img src="{{ asset('assets/brand-logos/infinix.svg') }}" alt="Infinix"><span>Infinix</span></button>
+                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="infinix"><img src="{{ asset('assets/brand-logos/infinix.svg') }}?v=20260412b" alt="Infinix"><span>Infinix</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="tecno"><img src="{{ asset('assets/brand-logos/tecno.svg') }}" alt="Tecno"><span>Tecno</span></button>
-                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="itel"><img src="{{ asset('assets/brand-logos/itel.svg') }}" alt="Itel"><span>Itel</span></button>
-                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="huawei"><img src="{{ asset('assets/brand-logos/huawei.svg') }}" alt="Huawei"><span>Huawei</span></button>
+                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="itel"><img src="{{ asset('assets/brand-logos/itel.svg') }}?v=20260412b" alt="Itel"><span>Itel</span></button>
+                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="huawei"><img src="{{ asset('assets/brand-logos/huawei.svg') }}?v=20260412b" alt="Huawei"><span>Huawei</span></button>
                     </div>
                 </div>
                 <div class="col-12">
