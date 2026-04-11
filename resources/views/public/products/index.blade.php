@@ -152,12 +152,12 @@
             box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .12);
         }
         .public-brand-shortcut-btn img {
-            width: 22px;
-            height: 22px;
+            width: 28px;
+            height: 28px;
             object-fit: contain;
             background: #fff;
             border-radius: .35rem;
-            padding: 2px;
+            padding: 3px;
         }
         @media (max-width: 767.98px) {
             #publicBrandShortcuts.brand-dropdown {
@@ -195,7 +195,7 @@
             }
             .public-brand-shortcut-btn {
                 width: 100%;
-                min-height: 96px;
+                min-height: 108px;
                 flex-direction: column;
                 justify-content: center;
                 text-align: center;
@@ -219,8 +219,8 @@
                 line-height: 1.1;
             }
             .public-brand-shortcut-btn img {
-                width: 38px;
-                height: 38px;
+                width: 48px;
+                height: 48px;
             }
             #publicProductsGrid .card-img-top,
             #publicProductsGrid .bg-light {
@@ -280,12 +280,12 @@
                 gap: .5rem !important;
             }
             .public-brand-shortcut-btn {
-                min-height: 86px;
+                min-height: 98px;
                 padding: .55rem .35rem;
             }
             .public-brand-shortcut-btn img {
-                width: 34px;
-                height: 34px;
+                width: 42px;
+                height: 42px;
             }
             .public-brand-shortcut-btn span {
                 font-size: .72rem;
