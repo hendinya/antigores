@@ -603,7 +603,10 @@
 
             const renderSuggestions = (items) => {
                 if (!items.length) {
-                    clearSuggestions();
+                    suggestionNames = [];
+                    activeSuggestionIndex = -1;
+                    suggestionWrap.innerHTML = '<div class="px-3 py-2 text-secondary small">Produk tidak ditemukan.</div>';
+                    suggestionWrap.classList.remove('d-none');
                     return;
                 }
                 suggestionNames = items;
@@ -652,9 +655,15 @@
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 });
                 const payload = await response.json();
-                renderSuggestions(payload.items || []);
-                const exactMatch = (payload.items || []).some((item) => String(item).toLowerCase() === keyword.toLowerCase());
-                if ((payload.items || []).length > 1 && !exactMatch) {
+                const suggestionItems = payload.items || [];
+                renderSuggestions(suggestionItems);
+                if (!suggestionItems.length) {
+                    productsGrid.innerHTML = `<div class="col-12 text-center py-4 text-secondary">${buildNoResultMessage()}</div>`;
+                    resultCount.textContent = '0 item';
+                    return;
+                }
+                const exactMatch = suggestionItems.some((item) => String(item).toLowerCase() === keyword.toLowerCase());
+                if (suggestionItems.length > 1 && !exactMatch) {
                     productsGrid.innerHTML = '<div class="col-12 text-center py-4 text-secondary">Pilih salah satu nama produk dari daftar saran.</div>';
                     resultCount.textContent = '0 item';
                 }

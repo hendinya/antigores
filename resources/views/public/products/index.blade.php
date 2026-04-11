@@ -687,7 +687,10 @@
 
             const renderSuggestions = (items) => {
                 if (!items.length) {
-                    clearSuggestions();
+                    suggestionNames = [];
+                    activeSuggestionIndex = -1;
+                    suggestionWrap.innerHTML = '<div class="px-3 py-2 text-secondary small">Produk tidak ditemukan.</div>';
+                    suggestionWrap.classList.remove('d-none');
                     return;
                 }
 
@@ -735,10 +738,16 @@
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 });
                 const payload = await response.json();
-                const exactMatch = payload.items.some((item) => item.toLowerCase() === keyword.toLowerCase());
-                renderSuggestions(payload.items);
+                const suggestionItems = payload.items || [];
+                const exactMatch = suggestionItems.some((item) => item.toLowerCase() === keyword.toLowerCase());
+                renderSuggestions(suggestionItems);
 
-                if (payload.items.length > 1 && !exactMatch) {
+                if (!suggestionItems.length) {
+                    showHint(false);
+                    return false;
+                }
+
+                if (suggestionItems.length > 1 && !exactMatch) {
                     grid.innerHTML = '<div class="col-12 text-center text-secondary py-4">Pilih salah satu nama produk dari daftar saran.</div>';
                     hasMore = false;
                     updateLoadMoreVisibility();
@@ -842,8 +851,12 @@
 
                     if (!exactMode) {
                         loadSuggestions()
-                            .then(() => {
-                                renderGridMessage('Pilih salah satu nama produk dari daftar saran.');
+                            .then((hasSuggestion) => {
+                                if (hasSuggestion) {
+                                    renderGridMessage('Pilih salah satu nama produk dari daftar saran.');
+                                } else {
+                                    renderGridMessage(buildNoResultMessage());
+                                }
                                 hasMore = false;
                                 updateLoadMoreVisibility();
                             })
