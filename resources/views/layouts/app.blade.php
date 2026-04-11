@@ -69,6 +69,17 @@
             border-radius: var(--app-radius-sm);
             transition: box-shadow var(--app-transition), transform var(--app-transition), background-color var(--app-transition), border-color var(--app-transition), color var(--app-transition);
         }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .btn-sm {
+            min-height: 40px;
+        }
         .btn:hover {
             transform: translateY(-1px);
         }
@@ -175,8 +186,15 @@
             .navbar-toggler {
                 width: 44px;
                 height: 44px;
+                padding: 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
                 border-radius: 10px;
                 border: 1px solid rgba(255, 255, 255, .45);
+            }
+            .navbar-toggler-icon {
+                margin: 0 auto;
             }
             .navbar-collapse {
                 position: fixed;
