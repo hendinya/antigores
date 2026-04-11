@@ -36,6 +36,14 @@ nano /var/www/antigores/.env
 
 Pastikan `APP_URL=https://tg.hpulsa.com` dan konfigurasi DB benar.
 
+Tambahkan konfigurasi Google OAuth:
+
+```bash
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=https://tg.hpulsa.com/auth/google/callback
+```
+
 ## 6) Nginx
 
 ```bash
@@ -69,3 +77,20 @@ curl -I https://tg.hpulsa.com/offline-products
 ```
 
 Expected response `HTTP/2 200`.
+
+## 10) Hardening (UFW + fail2ban)
+
+```bash
+chmod +x /var/www/antigores/deploy/vps/setup_security.sh
+SSH_PORT=22 /var/www/antigores/deploy/vps/setup_security.sh
+```
+
+## 11) Backup DB harian
+
+```bash
+chmod +x /var/www/antigores/deploy/vps/db_backup.sh
+/var/www/antigores/deploy/vps/db_backup.sh
+echo "0 2 * * * root ENV_FILE=/var/www/antigores/.env BACKUP_DIR=/var/backups/antigores-db RETENTION_DAYS=14 /var/www/antigores/deploy/vps/db_backup.sh >> /var/log/antigores-db-backup.log 2>&1" > /etc/cron.d/antigores-db-backup
+chmod 644 /etc/cron.d/antigores-db-backup
+systemctl restart cron
+```
