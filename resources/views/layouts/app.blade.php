@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
     <style>
         :root {
             --app-bg-start: #f4f8ff;
@@ -97,6 +99,43 @@
         .form-control,
         .form-select {
             border-color: #d5deea;
+        }
+        .form-select {
+            line-height: 1.25;
+            padding-top: .5rem;
+            padding-bottom: .5rem;
+        }
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: 44px;
+            border-radius: var(--app-radius-sm);
+            border-color: #d5deea;
+            transition: box-shadow var(--app-transition), border-color var(--app-transition);
+        }
+        .select2-container--bootstrap-5 .select2-selection--single {
+            display: flex;
+            align-items: center;
+            padding-left: .75rem;
+            padding-right: 2rem;
+        }
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            line-height: 1.25 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+            height: 100%;
+            right: .35rem;
+            top: 0;
+            display: flex;
+            align-items: center;
+        }
+        .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+        .select2-container--bootstrap-5.select2-container--open .select2-selection {
+            border-color: #7ea5eb;
+            box-shadow: 0 0 0 .2rem rgba(47, 111, 221, .16);
         }
         .form-control:focus,
         .form-select:focus {
@@ -329,6 +368,9 @@
                             <a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}" href="{{ route('admin.categories.index') }}">Categories</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.master-brands.*') ? 'active' : '' }}" href="{{ route('admin.master-brands.index') }}">Master Brands</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.brands.*') ? 'active' : '' }}" href="{{ route('admin.brands.index') }}">Brands</a>
                         </li>
                         <li class="nav-item">
@@ -367,6 +409,8 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     (() => {
@@ -487,6 +531,32 @@
             const observer = new MutationObserver(() => setResponsiveTableLabels(document));
             observer.observe(tbody, { childList: true, subtree: true });
         });
+
+        const initializeSelect2 = () => {
+            const $ = window.jQuery;
+            if (!$ || typeof $.fn.select2 !== 'function') {
+                return;
+            }
+            $('select').each(function () {
+                const $select = $(this);
+                if ($select.data('nativeSelect') === true || $select.data('nativeSelect') === 'true') {
+                    return;
+                }
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    return;
+                }
+                const placeholder = $select.data('placeholder') || undefined;
+                $select.select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder,
+                    allowClear: false,
+                    minimumResultsForSearch: 0,
+                });
+            });
+        };
+
+        initializeSelect2();
 
         document.querySelectorAll('img').forEach((image) => {
             if (!image.getAttribute('loading')) {

@@ -25,7 +25,7 @@
                     <select id="brand_id" name="brand_id" class="form-select" required>
                         <option value="">Pilih brand</option>
                         @foreach($brands as $brand)
-                            <option value="{{ $brand->id }}" data-category-id="{{ $brand->category_id }}" @selected(old('brand_id', $product->brand_id) == $brand->id)>{{ $brand->name }}</option>
+                            <option value="{{ $brand->id }}" @selected(old('brand_id', $product->brand_id) == $brand->id)>{{ $brand->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -57,28 +57,4 @@
             </form>
         </div>
     </div>
-    <script>
-        (() => {
-            const categorySelect = document.getElementById('category_id');
-            const brandSelect = document.getElementById('brand_id');
-            const brandOptions = Array.from(brandSelect.options);
-
-            const applyBrandFilter = () => {
-                const selectedCategoryId = categorySelect.value;
-                brandOptions.forEach((option) => {
-                    if (!option.value) {
-                        option.hidden = false;
-                        return;
-                    }
-                    option.hidden = selectedCategoryId && option.dataset.categoryId !== selectedCategoryId;
-                });
-                if (brandSelect.selectedOptions[0]?.hidden) {
-                    brandSelect.value = '';
-                }
-            };
-
-            categorySelect.addEventListener('change', applyBrandFilter);
-            applyBrandFilter();
-        })();
-    </script>
 @endsection

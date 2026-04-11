@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BrandController as AdminBrandController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\MasterBrandController as AdminMasterBrandController;
 use App\Http\Controllers\Admin\PhoneTypeController as AdminPhoneTypeController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\AuthController;
@@ -41,6 +42,7 @@ Route::middleware('auth')->group(function () {
         Route::post('products/import', [AdminProductController::class, 'import'])->name('products.import');
         Route::patch('products/{product}/visibility', [AdminProductController::class, 'updateVisibility'])->name('products.visibility');
         Route::resource('categories', AdminCategoryController::class)->except('show');
+        Route::resource('master-brands', AdminMasterBrandController::class)->except('show');
         Route::resource('brands', AdminBrandController::class)->except('show');
         Route::resource('phone-types', AdminPhoneTypeController::class)->except('show');
         Route::resource('products', AdminProductController::class)->except('show');

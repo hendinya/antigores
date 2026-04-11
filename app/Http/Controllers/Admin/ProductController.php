@@ -34,7 +34,7 @@ class ProductController extends Controller
         return view('admin.products.index', [
             'products' => $products,
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
-            'brands' => Brand::query()->orderBy('name')->get(['id', 'name', 'category_id']),
+            'brands' => Brand::query()->whereNull('category_id')->orderBy('name')->get(['id', 'name']),
             'phoneTypes' => PhoneType::query()->orderBy('name')->get(['id', 'name']),
             'importPreview' => Session::get(self::IMPORT_PREVIEW_SESSION_KEY),
         ]);
@@ -76,7 +76,7 @@ class ProductController extends Controller
     {
         return view('admin.products.create', [
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
-            'brands' => Brand::query()->orderBy('name')->get(['id', 'name', 'category_id']),
+            'brands' => Brand::query()->whereNull('category_id')->orderBy('name')->get(['id', 'name']),
             'phoneTypes' => PhoneType::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -95,13 +95,13 @@ class ProductController extends Controller
                 ),
             ],
             'category_id' => ['required', 'exists:categories,id'],
-            'brand_id' => ['required', Rule::exists('brands', 'id')->where(fn ($query) => $query->where('category_id', $request->integer('category_id')))],
+            'brand_id' => ['required', Rule::exists('brands', 'id')->where(fn ($query) => $query->whereNull('category_id'))],
             'phone_type_id' => ['required', 'exists:phone_types,id'],
             'product_note' => ['nullable', 'string', 'max:1000'],
             'is_visible_for_affiliator' => ['nullable', 'boolean'],
         ], [
             'name.unique' => 'Nama produk dengan kategori dan brand ini sudah ada.',
-            'brand_id.exists' => 'Brand harus sesuai dengan kategori yang dipilih.',
+            'brand_id.exists' => 'Brand harus berasal dari Master Brands.',
         ]);
         $validated['is_visible_for_affiliator'] = (bool) ($validated['is_visible_for_affiliator'] ?? true);
 
@@ -115,7 +115,7 @@ class ProductController extends Controller
         return view('admin.products.edit', [
             'product' => $product,
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
-            'brands' => Brand::query()->orderBy('name')->get(['id', 'name', 'category_id']),
+            'brands' => Brand::query()->whereNull('category_id')->orderBy('name')->get(['id', 'name']),
             'phoneTypes' => PhoneType::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -136,13 +136,13 @@ class ProductController extends Controller
                     ),
             ],
             'category_id' => ['required', 'exists:categories,id'],
-            'brand_id' => ['required', Rule::exists('brands', 'id')->where(fn ($query) => $query->where('category_id', $request->integer('category_id')))],
+            'brand_id' => ['required', Rule::exists('brands', 'id')->where(fn ($query) => $query->whereNull('category_id'))],
             'phone_type_id' => ['required', 'exists:phone_types,id'],
             'product_note' => ['nullable', 'string', 'max:1000'],
             'is_visible_for_affiliator' => ['nullable', 'boolean'],
         ], [
             'name.unique' => 'Nama produk dengan kategori dan brand ini sudah ada.',
-            'brand_id.exists' => 'Brand harus sesuai dengan kategori yang dipilih.',
+            'brand_id.exists' => 'Brand harus berasal dari Master Brands.',
         ]);
         $validated['is_visible_for_affiliator'] = (bool) ($validated['is_visible_for_affiliator'] ?? false);
 
@@ -261,7 +261,7 @@ class ProductController extends Controller
         }
         $writer->addRow(Row::fromValues([]));
         $writer->addRow(Row::fromValues(['Referensi Brand']));
-        foreach (Brand::query()->orderBy('name')->pluck('name') as $name) {
+        foreach (Brand::query()->whereNull('category_id')->orderBy('name')->pluck('name') as $name) {
             $writer->addRow(Row::fromValues([$name]));
         }
         $writer->addRow(Row::fromValues([]));
@@ -337,15 +337,15 @@ class ProductController extends Controller
                     }
 
                     $brand = Brand::query()
-                        ->where('category_id', $category->id)
+                        ->whereNull('category_id')
                         ->whereRaw('LOWER(name) = ?', [Str::lower($brandName)])
                         ->first();
                     if (! $brand) {
                         $brand = Brand::query()->create([
                             'name' => $brandName,
-                            'category_id' => $category->id,
+                            'category_id' => null,
                         ]);
-                        $notes[] = "Brand '{$brandName}' dibuat otomatis";
+                        $notes[] = "Master brand '{$brandName}' dibuat otomatis";
                     }
 
                     $phoneType = PhoneType::query()->whereRaw('LOWER(name) = ?', [Str::lower($showcaseName)])->first();

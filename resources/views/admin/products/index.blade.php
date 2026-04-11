@@ -175,7 +175,7 @@
                     <select id="filter_brand_id" name="brand_id" class="form-select">
                         <option value="">Semua brand</option>
                         @foreach($brands as $brand)
-                            <option value="{{ $brand->id }}" data-category-id="{{ $brand->category_id }}" @selected((string) request('brand_id') === (string) $brand->id)>{{ $brand->name }}</option>
+                            <option value="{{ $brand->id }}" @selected((string) request('brand_id') === (string) $brand->id)>{{ $brand->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -344,23 +344,8 @@
             const prevButton = document.getElementById('adminPrevPage');
             const nextButton = document.getElementById('adminNextPage');
             const csrfToken = '{{ csrf_token() }}';
-            const options = Array.from(brandSelect.options);
             let debounceTimer;
             let currentPage = {{ $products->currentPage() }};
-
-            const applyFilter = () => {
-                const categoryId = categorySelect.value;
-                options.forEach((option) => {
-                    if (!option.value) {
-                        option.hidden = false;
-                        return;
-                    }
-                    option.hidden = categoryId && option.dataset.categoryId !== categoryId;
-                });
-                if (brandSelect.selectedOptions[0]?.hidden) {
-                    brandSelect.value = '';
-                }
-            };
 
             const renderRows = (items) => {
                 if (!items.length) {
@@ -439,7 +424,6 @@
                 }, 300);
             };
 
-            categorySelect.addEventListener('change', applyFilter);
             categorySelect.addEventListener('change', triggerRealtimeFilter);
             brandSelect.addEventListener('change', triggerRealtimeFilter);
             showcaseSelect.addEventListener('change', triggerRealtimeFilter);
@@ -481,7 +465,6 @@
                 }
                 form.submit();
             });
-            applyFilter();
         })();
     </script>
 @endsection
