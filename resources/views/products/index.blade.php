@@ -378,16 +378,16 @@
                 <div id="brandShortcuts" class="d-flex gap-2 mb-3 brand-dropdown">
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="iphone"><img src="{{ asset('assets/brand-logos/iphone.svg') }}" alt="iPhone"><span>iPhone</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="samsung"><img src="{{ asset('assets/brand-logos/samsung.svg') }}" alt="Samsung"><span>Samsung</span></button>
-                    <button type="button" class="brand-shortcut-btn" data-brand-keyword="infinix"><img src="{{ asset('assets/brand-logos/infinix.svg') }}" alt="Infinix"><span>Infinix</span></button>
+                    <button type="button" class="brand-shortcut-btn" data-brand-keyword="realme"><img src="{{ asset('assets/brand-logos/realme.svg') }}" alt="Realme"><span>Realme</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="redmi"><img src="{{ asset('assets/brand-logos/redmi.svg') }}" alt="Redmi"><span>Redmi</span></button>
-                    <button type="button" class="brand-shortcut-btn" data-brand-keyword="xiaomi"><img src="{{ asset('assets/brand-logos/xiaomi.svg') }}" alt="Xiaomi"><span>Xiaomi</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="poco"><img src="{{ asset('assets/brand-logos/poco.svg') }}" alt="Poco"><span>Poco</span></button>
-                    <button type="button" class="brand-shortcut-btn" data-brand-keyword="huawei"><img src="{{ asset('assets/brand-logos/huawei.svg') }}" alt="Huawei"><span>Huawei</span></button>
+                    <button type="button" class="brand-shortcut-btn" data-brand-keyword="xiaomi"><img src="{{ asset('assets/brand-logos/xiaomi.svg') }}" alt="Xiaomi"><span>Xiaomi</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="oppo"><img src="{{ asset('assets/brand-logos/oppo.svg') }}" alt="Oppo"><span>Oppo</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="vivo"><img src="{{ asset('assets/brand-logos/vivo.svg') }}" alt="Vivo"><span>Vivo</span></button>
-                    <button type="button" class="brand-shortcut-btn" data-brand-keyword="realme"><img src="{{ asset('assets/brand-logos/realme.svg') }}" alt="Realme"><span>Realme</span></button>
+                    <button type="button" class="brand-shortcut-btn" data-brand-keyword="infinix"><img src="{{ asset('assets/brand-logos/infinix.svg') }}" alt="Infinix"><span>Infinix</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="tecno"><img src="{{ asset('assets/brand-logos/tecno.svg') }}" alt="Tecno"><span>Tecno</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="itel"><img src="{{ asset('assets/brand-logos/itel.svg') }}" alt="Itel"><span>Itel</span></button>
+                    <button type="button" class="brand-shortcut-btn" data-brand-keyword="huawei"><img src="{{ asset('assets/brand-logos/huawei.svg') }}" alt="Huawei"><span>Huawei</span></button>
                 </div>
                 <div class="row g-2" id="productsSearchFields">
                     <div class="col-lg-6">
@@ -465,7 +465,11 @@
                         </div>
                     </div>
                 @empty
-                    <div class="col-12 text-center py-4 text-secondary">Data produk tidak ditemukan.</div>
+                    @if(request('keyword'))
+                        <div class="col-12 text-center py-4 text-secondary">Produk dengan kata kunci "{{ request('keyword') }}" tidak ditemukan.</div>
+                    @else
+                        <div class="col-12 text-center py-4 text-secondary">Data produk tidak ditemukan.</div>
+                    @endif
                 @endforelse
             </div>
         </div>
@@ -507,9 +511,24 @@
             let activeSuggestionIndex = -1;
             let suggestionNames = [];
 
+            const escapeHtml = (text) => String(text ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+
+            const buildNoResultMessage = () => {
+                const keyword = keywordInput.value.trim();
+                if (keyword) {
+                    return `Produk dengan kata kunci "<strong>${escapeHtml(keyword)}</strong>" tidak ditemukan.`;
+                }
+                return 'Data produk tidak ditemukan untuk filter yang dipilih.';
+            };
+
             const renderCards = (items) => {
                 if (!items.length) {
-                    productsGrid.innerHTML = '<div class="col-12 text-center py-4 text-secondary">Data produk tidak ditemukan.</div>';
+                    productsGrid.innerHTML = `<div class="col-12 text-center py-4 text-secondary">${buildNoResultMessage()}</div>`;
                     return;
                 }
 

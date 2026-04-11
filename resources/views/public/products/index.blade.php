@@ -342,16 +342,16 @@
                     <div id="publicBrandShortcuts" class="d-flex gap-2 brand-dropdown">
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="iphone"><img src="{{ asset('assets/brand-logos/iphone.svg') }}" alt="iPhone"><span>iPhone</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="samsung"><img src="{{ asset('assets/brand-logos/samsung.svg') }}" alt="Samsung"><span>Samsung</span></button>
-                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="infinix"><img src="{{ asset('assets/brand-logos/infinix.svg') }}" alt="Infinix"><span>Infinix</span></button>
+                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="realme"><img src="{{ asset('assets/brand-logos/realme.svg') }}" alt="Realme"><span>Realme</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="redmi"><img src="{{ asset('assets/brand-logos/redmi.svg') }}" alt="Redmi"><span>Redmi</span></button>
-                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="xiaomi"><img src="{{ asset('assets/brand-logos/xiaomi.svg') }}" alt="Xiaomi"><span>Xiaomi</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="poco"><img src="{{ asset('assets/brand-logos/poco.svg') }}" alt="Poco"><span>Poco</span></button>
-                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="huawei"><img src="{{ asset('assets/brand-logos/huawei.svg') }}" alt="Huawei"><span>Huawei</span></button>
+                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="xiaomi"><img src="{{ asset('assets/brand-logos/xiaomi.svg') }}" alt="Xiaomi"><span>Xiaomi</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="oppo"><img src="{{ asset('assets/brand-logos/oppo.svg') }}" alt="Oppo"><span>Oppo</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="vivo"><img src="{{ asset('assets/brand-logos/vivo.svg') }}" alt="Vivo"><span>Vivo</span></button>
-                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="realme"><img src="{{ asset('assets/brand-logos/realme.svg') }}" alt="Realme"><span>Realme</span></button>
+                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="infinix"><img src="{{ asset('assets/brand-logos/infinix.svg') }}" alt="Infinix"><span>Infinix</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="tecno"><img src="{{ asset('assets/brand-logos/tecno.svg') }}" alt="Tecno"><span>Tecno</span></button>
                         <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="itel"><img src="{{ asset('assets/brand-logos/itel.svg') }}" alt="Itel"><span>Itel</span></button>
+                        <button type="button" class="public-brand-shortcut-btn" data-brand-keyword="huawei"><img src="{{ asset('assets/brand-logos/huawei.svg') }}" alt="Huawei"><span>Huawei</span></button>
                     </div>
                 </div>
                 <div class="col-12">
@@ -387,7 +387,31 @@
     </div>
 
     <div class="row g-3" id="publicProductsGrid">
-        <div class="col-12 text-center text-secondary py-4">Produk akan ditampilkan setelah kata kedua diketik dan pilihan produk dipilih.</div>
+        @forelse($initialItems as $item)
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card h-100 border">
+                    @if(!empty($item['image_url']))
+                        <img src="{{ $item['image_url'] }}" alt="{{ $item['name'] }}" class="card-img-top bg-light" style="height: 260px; object-fit: contain;" loading="lazy">
+                    @else
+                        <div class="bg-light d-flex align-items-center justify-content-center text-secondary" style="height: 260px;">Tanpa Gambar</div>
+                    @endif
+                    <div class="card-body p-3">
+                        <h2 class="h6 mb-2">{{ $item['name'] }}</h2>
+                        <p class="mb-1 small text-secondary">{{ $item['category'] }}</p>
+                        <p class="mb-1 small text-secondary">Detail Etalase: {{ $item['showcase'] ?? '-' }}</p>
+                        <p class="mb-1 small text-secondary">Ukuran Antigores: {{ $item['antigores_size'] ?? '-' }}</p>
+                        <p class="mb-2 small text-secondary">Bentuk Kamera: {{ $item['camera_shape'] ?? '-' }}</p>
+                        <span class="badge text-bg-success">Etalase Aktif</span>
+                    </div>
+                </div>
+            </div>
+        @empty
+            @if($initialKeyword !== '')
+                <div class="col-12 text-center text-secondary py-4">Produk dengan kata kunci "{{ $initialKeyword }}" tidak ditemukan.</div>
+            @else
+                <div class="col-12 text-center text-secondary py-4">Produk akan ditampilkan setelah kata kedua diketik dan pilihan produk dipilih.</div>
+            @endif
+        @endforelse
     </div>
 
     <div class="d-flex justify-content-center mt-3">
@@ -532,6 +556,14 @@
             };
 
             const isSizeMode = () => sizeModeSwitch.checked;
+
+            const buildNoResultMessage = () => {
+                const keyword = keywordInput.value.trim();
+                if (keyword) {
+                    return `Produk dengan kata kunci "<strong>${escapeHtml(keyword)}</strong>" tidak ditemukan.`;
+                }
+                return 'Data produk tidak ditemukan.';
+            };
 
             const syncBrandShortcutState = () => {
                 const keyword = keywordInput.value.trim().toLowerCase();
@@ -760,7 +792,7 @@
                             renderShowcases(payload.showcases || []);
                             hasMore = false;
                         } else if (exactMode) {
-                            grid.innerHTML = html || '<div class="col-12 text-center text-secondary py-4">Data produk tidak ditemukan.</div>';
+                            grid.innerHTML = html || `<div class="col-12 text-center text-secondary py-4">${buildNoResultMessage()}</div>`;
                         } else {
                             renderGridMessage('Pilih salah satu nama produk dari daftar saran.');
                         }
