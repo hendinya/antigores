@@ -329,6 +329,12 @@
                     <li class="nav-item d-flex align-items-center text-white-50 me-3 small">
                         {{ auth()->user()->name }} ({{ auth()->user()->role }})
                     </li>
+                    <li class="nav-item d-flex align-items-center">
+                        <form method="POST" action="{{ route('logout') }}" class="m-0">
+                            @csrf
+                            <button class="btn btn-outline-light btn-sm">Logout</button>
+                        </form>
+                    </li>
                 @endguest
             </ul>
         </div>

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use Throwable;
 
 class GoogleAuthController extends Controller
 {
@@ -31,7 +32,13 @@ class GoogleAuthController extends Controller
             ]);
         }
 
-        $googleUser = Socialite::driver('google')->user();
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (Throwable) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Proses login Google gagal. Coba lagi dari tombol Login dengan Google.',
+            ]);
+        }
 
         $user = User::where('email', $googleUser->getEmail())->first();
 
