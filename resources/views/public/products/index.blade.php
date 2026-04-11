@@ -176,9 +176,10 @@
                 grid-template-columns: repeat(3, minmax(0, 1fr));
                 gap: .75rem;
                 transform-origin: top center;
-                max-height: 360px;
+                max-height: 1400px;
                 opacity: 1;
                 transform: translateY(0);
+                overflow: hidden;
             }
             #publicBrandShortcuts.is-collapsed {
                 max-height: 0;
