@@ -12,7 +12,7 @@ use App\Http\Controllers\ProductCatalogController;
 use App\Http\Controllers\PublicProductController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/offline-products');
+Route::redirect('/', '/login');
 Route::get('/offline-products', [PublicProductController::class, 'index'])->name('public.products.index');
 Route::get('/offline-products/search', [PublicProductController::class, 'search'])->name('public.products.search');
 Route::get('/offline-products/suggest', [PublicProductController::class, 'suggest'])->name('public.products.suggest');

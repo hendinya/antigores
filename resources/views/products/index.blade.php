@@ -173,12 +173,12 @@
             box-shadow: 0 0 0 .2rem rgba(255,255,255,.14);
         }
         .brand-shortcut-btn img {
-            width: 22px;
-            height: 22px;
+            width: 28px;
+            height: 28px;
             object-fit: contain;
             background: #fff;
             border-radius: .35rem;
-            padding: 2px;
+            padding: 3px;
         }
         @media (max-width: 767.98px) {
             #brandShortcuts.brand-dropdown {
@@ -233,7 +233,7 @@
             }
             .brand-shortcut-btn {
                 width: 100%;
-                min-height: 96px;
+                min-height: 108px;
                 flex-direction: column;
                 justify-content: center;
                 text-align: center;
@@ -245,8 +245,8 @@
                 line-height: 1.1;
             }
             .brand-shortcut-btn img {
-                width: 38px;
-                height: 38px;
+                width: 48px;
+                height: 48px;
             }
             #productsGrid .card-img-top,
             #productsGrid .bg-light {
@@ -313,12 +313,12 @@
                 gap: .5rem !important;
             }
             .brand-shortcut-btn {
-                min-height: 86px;
+                min-height: 98px;
                 padding: .55rem .35rem;
             }
             .brand-shortcut-btn img {
-                width: 34px;
-                height: 34px;
+                width: 42px;
+                height: 42px;
             }
             .brand-shortcut-btn span {
                 font-size: .72rem;
@@ -390,11 +390,10 @@
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="huawei"><img src="{{ asset('assets/brand-logos/huawei.svg') }}?v=20260412b" alt="Huawei"><span>Huawei</span></button>
                 </div>
                 <div class="row g-2" id="productsSearchFields">
-                    <div class="col-lg-6">
-                        <label class="form-label text-white-50">Cari cepat</label>
+                    <div class="col-lg-8">
                         <div class="position-relative" id="productsSearchControl">
                             <div class="input-group">
-                                <input id="keywordInput" type="text" name="keyword" class="form-control form-control-lg" placeholder="Nama produk, merk, kategori, etalase" value="{{ request('keyword') }}">
+                                <input id="keywordInput" type="search" name="keyword" class="form-control form-control-lg" placeholder="Nama produk" value="{{ request('keyword') }}" enterkeyhint="search" inputmode="search">
                                 <button id="productsVoiceToggle" class="btn btn-outline-light position-relative" type="button" aria-label="Mulai rekam suara">
                                     <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true">
                                         <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a1 1 0 1 1 2 0 7 7 0 0 1-6 6.92V20h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2.08A7 7 0 0 1 5 11a1 1 0 1 1 2 0 5 5 0 0 0 10 0Z"/>
@@ -410,23 +409,13 @@
                         </div>
                         <small id="productsVoiceError" class="text-warning d-none">Voice input tidak tersedia.</small>
                     </div>
-                    <div id="productsFiltersPanel" class="col-12 col-lg-6">
+                    <div id="productsFiltersPanel" class="col-12 col-lg-4">
                         <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label text-white-50">Kategori</label>
-                                <select id="categoryFilter" name="category_id" class="form-select form-select-lg">
+                            <div class="col-12">
+                                <select id="categoryFilter" name="category_id" class="form-select form-select-lg" aria-label="Filter kategori">
                                     <option value="">Semua kategori</option>
                                     @foreach($categories as $category)
                                         <option value="{{ $category->id }}" @selected(request('category_id') == $category->id)>{{ $category->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label text-white-50">Brands</label>
-                                <select id="brandFilter" name="brand_id" class="form-select form-select-lg">
-                                    <option value="">Semua brand</option>
-                                    @foreach($brands as $brand)
-                                        <option value="{{ $brand->id }}" @selected(request('brand_id') == $brand->id)>{{ $brand->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -434,7 +423,7 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 mt-2">
-                    <span id="productsHint" class="text-white-50 small">Ketik minimal 2 kata lalu pilih dari saran.</span>
+                    <span id="productsHint" class="text-white-50 small d-none"></span>
                     <span id="productsExactBadge" class="badge text-bg-light text-dark d-none"></span>
                 </div>
             </form>
@@ -491,7 +480,6 @@
             const hintText = document.getElementById('productsHint');
             const exactBadge = document.getElementById('productsExactBadge');
             const categoryFilter = document.getElementById('categoryFilter');
-            const brandFilter = document.getElementById('brandFilter');
             const productsGrid = document.getElementById('productsGrid');
             const resultCount = document.getElementById('resultCount');
             const pagination = document.getElementById('productsPagination');
@@ -553,7 +541,6 @@
                 const params = new URLSearchParams({
                     keyword: keywordInput.value.trim(),
                     category_id: categoryFilter.value,
-                    brand_id: brandFilter.value,
                     exact: exactMode ? '1' : '0',
                 });
 
@@ -649,7 +636,6 @@
                 const params = new URLSearchParams({
                     keyword,
                     category_id: categoryFilter.value,
-                    brand_id: brandFilter.value,
                 });
                 const response = await fetch(`${suggestUrl}?${params.toString()}`, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -749,7 +735,7 @@
                     if (!exactMode && !canSearchKeyword(keyword)) {
                         clearSuggestions();
                         showHint(true);
-                        productsGrid.innerHTML = '<div class="col-12 text-center py-4 text-secondary">Ketik minimal 2 kata lalu pilih dari saran.</div>';
+                        productsGrid.innerHTML = '<div class="col-12 text-center py-4 text-secondary">Ketik minimal 2 kata.</div>';
                         resultCount.textContent = '0 item';
                         return;
                     }
@@ -800,19 +786,6 @@
                 });
             };
 
-            const syncBrandDropdownByKeyword = (keyword) => {
-                const normalized = (keyword || '').trim().toLowerCase();
-                const options = Array.from(brandFilter.options);
-                const matched = options.find((option) => {
-                    if (!option.value) {
-                        return false;
-                    }
-                    const optionText = (option.textContent || '').trim().toLowerCase();
-                    return optionText === normalized || optionText.includes(normalized) || normalized.includes(optionText);
-                });
-                brandFilter.value = matched ? matched.value : '';
-            };
-
             keywordInput.addEventListener('input', () => {
                 exactMode = false;
                 showExactBadge(null);
@@ -843,11 +816,6 @@
                 }
             });
             categoryFilter.addEventListener('change', () => {
-                exactMode = false;
-                showExactBadge(null);
-                triggerSearch();
-            });
-            brandFilter.addEventListener('change', () => {
                 exactMode = false;
                 showExactBadge(null);
                 triggerSearch();
@@ -886,7 +854,6 @@
                 button.addEventListener('click', () => {
                     const brandKeyword = button.dataset.brandKeyword || '';
                     keywordInput.value = `${brandKeyword} `;
-                    syncBrandDropdownByKeyword(brandKeyword);
                     keywordInput.focus();
                     syncBrandShortcutState();
                     exactMode = false;

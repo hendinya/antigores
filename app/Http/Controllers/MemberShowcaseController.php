@@ -17,12 +17,12 @@ class MemberShowcaseController extends Controller
     {
         abort_if($request->user()->isAdmin(), 403);
 
-        $categories = Category::query()->orderBy('name')->get(['id', 'name']);
+        $categories = Category::query()->orderBy('name')->get(['id', 'name', 'image_path']);
         $selectedCategoryId = $request->integer('category_id') ?: (int) $categories->first()?->id;
         $brands = Brand::query()
             ->where('category_id', $selectedCategoryId)
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'image_path']);
         $showcases = $request->user()
             ->memberShowcases()
             ->whereIn('brand_id', $brands->pluck('id'))
