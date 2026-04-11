@@ -8,7 +8,9 @@
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.0",
-        "laravel/tinker": "^3.0"
+        "laravel/socialite": "^5.23",
+        "laravel/tinker": "^3.0",
+        "openspout/openspout": "^4.28"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -35,17 +37,23 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
-            "@php artisan migrate --force",
+            "@php -d extension=pdo_sqlite -d extension=sqlite3 artisan migrate --force",
             "npm install",
             "npm run build"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php -d extension=pdo_sqlite -d extension=sqlite3 -S 127.0.0.1:8000 -t public public/index.php\" \"php -d extension=pdo_sqlite -d extension=sqlite3 artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan test"
+            "@php -d extension=pdo_sqlite -d extension=sqlite3 artisan test"
+        ],
+        "start": [
+            "powershell -ExecutionPolicy Bypass -File ./run.ps1"
+        ],
+        "start:quick": [
+            "@php -d extension=pdo_sqlite -d extension=sqlite3 -S 127.0.0.1:8000 -t public public/index.php"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
