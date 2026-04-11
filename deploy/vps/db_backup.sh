@@ -25,7 +25,7 @@ db_pass="${DB_PASSWORD:-}"
 timestamp="$(date +%Y%m%d-%H%M%S)"
 file="$BACKUP_DIR/${db_name}-${timestamp}.sql.gz"
 
-mysqldump -h "$db_host" -P "$db_port" -u "$db_user" --password="$db_pass" --single-transaction --quick "$db_name" | gzip > "$file"
+mysqldump -h "$db_host" -P "$db_port" -u "$db_user" --password="$db_pass" --single-transaction --quick --no-tablespaces "$db_name" | gzip > "$file"
 
 find "$BACKUP_DIR" -type f -name "*.sql.gz" -mtime +"$RETENTION_DAYS" -delete
 
