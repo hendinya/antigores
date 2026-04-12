@@ -40,6 +40,8 @@ Route::middleware('auth')->group(function () {
         Route::get('products/search', [AdminProductController::class, 'search'])->name('products.search');
         Route::get('products/template', [AdminProductController::class, 'template'])->name('products.template');
         Route::post('products/import', [AdminProductController::class, 'import'])->name('products.import');
+        Route::post('products/bulk-delete', [AdminProductController::class, 'bulkDestroy'])->name('products.bulk-delete');
+        Route::patch('products/bulk-visibility', [AdminProductController::class, 'bulkUpdateVisibility'])->name('products.bulk-visibility');
         Route::patch('products/{product}/visibility', [AdminProductController::class, 'updateVisibility'])->name('products.visibility');
         Route::resource('categories', AdminCategoryController::class)->except('show');
         Route::resource('master-brands', AdminMasterBrandController::class)->except('show');

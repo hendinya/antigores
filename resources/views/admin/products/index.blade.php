@@ -5,8 +5,12 @@
         #adminProductsHeaderActions,
         #adminProductsPaginationControls,
         .admin-product-actions,
-        #adminImportActions {
+        #adminImportActions,
+        #adminBulkActions {
             gap: .5rem;
+        }
+        #adminBulkActionsWrap.d-none {
+            display: none !important;
         }
         #adminProductsFilterForm .form-label {
             margin-bottom: .35rem;
@@ -265,15 +269,32 @@
             </div>
         </div>
     @endif
+    <form id="adminBulkActionForm" method="POST" class="d-none">
+        @csrf
+        <input type="hidden" name="_method" id="adminBulkMethodInput" value="POST">
+        <input type="hidden" name="is_visible_for_affiliator" id="adminBulkVisibilityInput" value="">
+        <div id="adminBulkIdsWrap"></div>
+    </form>
 
+
+        <div class="card-header bg-white d-flex justify-content-between align-items-center" id="adminBulkActionsWrap">
+            <div class="small text-secondary" id="adminBulkSelectedInfo">0 produk dipilih</div>
+            <div class="d-flex" id="adminBulkActions">
+                <button type="button" class="btn btn-outline-success btn-sm" id="adminBulkShowBtn" disabled>Tampilkan Affiliator</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="adminBulkHideBtn" disabled>Sembunyikan Affiliator</button>
+                <button type="button" class="btn btn-outline-danger btn-sm" id="adminBulkDeleteBtn" disabled>Hapus Terpilih</button>
+            </div>
+        </div>
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <table class="table mb-0">
                 <thead>
+                    <th style="width: 42px;">
+                        <input type="checkbox" id="adminBulkSelectAll" aria-label="Pilih semua produk">
+                    </th>
                 <tr>
                     <th>Gambar</th>
                     <th>Nama</th>
-                    <th>Bentuk Kamera</th>
                     <th>Ukuran Antigores</th>
                     <th>Etalase</th>
                     <th>Brand</th>
@@ -285,6 +306,9 @@
                 <tbody id="adminProductsTableBody">
                 @forelse($products as $product)
                     <tr>
+                        <td>
+                            <input type="checkbox" class="bulk-product-checkbox" value="{{ $product->id }}" aria-label="Pilih produk {{ $product->name }}">
+                        </td>
                         <td>
                             @if($product->category->image_path)
                                 <img src="{{ asset('storage/'.$product->category->image_path) }}" alt="{{ $product->category->name }}" class="rounded" style="width: 42px; height: 42px; object-fit: cover;">
@@ -328,7 +352,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>
+                    <tr><td colspan="10" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -353,18 +377,83 @@
             const paginationInfo = document.getElementById('adminProductsPaginationInfo');
             const prevButton = document.getElementById('adminPrevPage');
             const nextButton = document.getElementById('adminNextPage');
+            const bulkSelectAll = document.getElementById('adminBulkSelectAll');
+            const bulkSelectedInfo = document.getElementById('adminBulkSelectedInfo');
+            const bulkActionsWrap = document.getElementById('adminBulkActionsWrap');
+            const bulkDeleteButton = document.getElementById('adminBulkDeleteBtn');
+            const bulkShowButton = document.getElementById('adminBulkShowBtn');
+            const bulkHideButton = document.getElementById('adminBulkHideBtn');
+            const bulkForm = document.getElementById('adminBulkActionForm');
+            const bulkMethodInput = document.getElementById('adminBulkMethodInput');
+            const bulkVisibilityInput = document.getElementById('adminBulkVisibilityInput');
+            const bulkIdsWrap = document.getElementById('adminBulkIdsWrap');
             const csrfToken = '{{ csrf_token() }}';
             let debounceTimer;
             let currentPage = {{ $products->currentPage() }};
 
+            const getSelectedIds = () => Array.from(tableBody.querySelectorAll('.bulk-product-checkbox:checked'))
+                .map((checkbox) => checkbox.value);
+
+            const updateBulkSelectionState = () => {
+                const allCheckboxes = Array.from(tableBody.querySelectorAll('.bulk-product-checkbox'));
+                const selectedIds = getSelectedIds();
+                const hasSelection = selectedIds.length > 0;
+
+                bulkSelectedInfo.textContent = `${selectedIds.length} produk dipilih`;
+                bulkActionsWrap.classList.toggle('d-none', !hasSelection);
+                bulkDeleteButton.disabled = !hasSelection;
+                bulkShowButton.disabled = !hasSelection;
+                bulkHideButton.disabled = !hasSelection;
+
+                if (!allCheckboxes.length) {
+                    bulkSelectAll.checked = false;
+                    bulkSelectAll.indeterminate = false;
+                    return;
+                }
+
+                const selectedCount = allCheckboxes.filter((checkbox) => checkbox.checked).length;
+                bulkSelectAll.checked = selectedCount > 0 && selectedCount === allCheckboxes.length;
+                bulkSelectAll.indeterminate = selectedCount > 0 && selectedCount < allCheckboxes.length;
+            };
+
+            const submitBulkAction = async ({ actionUrl, method, visibility, confirmationText, successText }) => {
+                const selectedIds = getSelectedIds();
+                if (!selectedIds.length) {
+                    return;
+                }
+
+                const confirmation = await Swal.fire({
+                    icon: 'question',
+                    title: 'Konfirmasi Aksi Massal',
+                    text: confirmationText,
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya',
+                    cancelButtonText: 'Tidak',
+                    reverseButtons: true,
+                });
+                if (!confirmation.isConfirmed) {
+                    return;
+                }
+
+                bulkForm.setAttribute('action', actionUrl);
+                bulkMethodInput.value = method;
+                bulkVisibilityInput.value = visibility ?? '';
+                bulkIdsWrap.innerHTML = selectedIds.map((id) => `<input type="hidden" name="product_ids[]" value="${id}">`).join('');
+                bulkForm.submit();
+            };
+
             const renderRows = (items) => {
                 if (!items.length) {
-                    tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>';
+                    updateBulkSelectionState();
                     return;
                 }
 
                 tableBody.innerHTML = items.map((item) => `
                     <tr>
+                        <td>
+                            <input type="checkbox" class="bulk-product-checkbox" value="${item.id}" aria-label="Pilih produk ${item.name}">
+                        </td>
                         <td>
                             ${item.category_image ? `<img src="${item.category_image}" alt="${item.category}" class="rounded" style="width: 42px; height: 42px; object-fit: cover;">` : '-'}
                         </td>
@@ -402,6 +491,7 @@
                         </td>
                     </tr>
                 `).join('');
+                updateBulkSelectionState();
             };
 
             const updatePagination = (pagination) => {
@@ -447,8 +537,35 @@
                 event.preventDefault();
                 loadProducts(1);
             });
+            bulkSelectAll.addEventListener('change', () => {
+                tableBody.querySelectorAll('.bulk-product-checkbox').forEach((checkbox) => {
+                    checkbox.checked = bulkSelectAll.checked;
+                });
+                updateBulkSelectionState();
+            });
+            bulkDeleteButton.addEventListener('click', () => submitBulkAction({
+                actionUrl: '{{ route('admin.products.bulk-delete') }}',
+                method: 'POST',
+                confirmationText: 'Yakin ingin menghapus semua produk yang dipilih?',
+            }));
+            bulkShowButton.addEventListener('click', () => submitBulkAction({
+                actionUrl: '{{ route('admin.products.bulk-visibility') }}',
+                method: 'PATCH',
+                visibility: '1',
+                confirmationText: 'Yakin ingin menampilkan produk terpilih untuk affiliator?',
+            }));
+            bulkHideButton.addEventListener('click', () => submitBulkAction({
+                actionUrl: '{{ route('admin.products.bulk-visibility') }}',
+                method: 'PATCH',
+                visibility: '0',
+                confirmationText: 'Yakin ingin menyembunyikan produk terpilih dari affiliator?',
+            }));
             tableBody.addEventListener('change', async (event) => {
                 const target = event.target;
+                if (target instanceof HTMLInputElement && target.classList.contains('bulk-product-checkbox')) {
+                    updateBulkSelectionState();
+                    return;
+                }
                 if (!(target instanceof HTMLInputElement) || !target.classList.contains('visibility-switch')) {
                     return;
                 }
@@ -478,6 +595,7 @@
                 }
                 form.submit();
             });
+            updateBulkSelectionState();
         })();
     </script>
 @endsection
