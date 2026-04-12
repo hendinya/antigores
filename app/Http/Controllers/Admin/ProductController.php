@@ -158,6 +158,18 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')->with('success', 'Produk berhasil dihapus.');
     }
 
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'product_ids' => ['required', 'array', 'min:1'],
+            'product_ids.*' => ['integer', 'exists:products,id'],
+        ]);
+
+        $deleted = Product::query()->whereIn('id', $validated['product_ids'])->delete();
+
+        return redirect()->route('admin.products.index')->with('success', "Berhasil menghapus {$deleted} produk.");
+    }
+
     public function updateVisibility(Request $request, Product $product): RedirectResponse
     {
         $validated = $request->validate([
@@ -172,6 +184,28 @@ class ProductController extends Controller
             $isVisible
                 ? 'Produk ditampilkan untuk affiliator.'
                 : 'Produk disembunyikan dari affiliator.'
+        );
+    }
+
+    public function bulkUpdateVisibility(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'product_ids' => ['required', 'array', 'min:1'],
+            'product_ids.*' => ['integer', 'exists:products,id'],
+            'is_visible_for_affiliator' => ['required', 'boolean'],
+        ]);
+
+        $affected = Product::query()
+            ->whereIn('id', $validated['product_ids'])
+            ->update(['is_visible_for_affiliator' => (bool) $validated['is_visible_for_affiliator']]);
+
+        $isVisible = (bool) $validated['is_visible_for_affiliator'];
+
+        return redirect()->route('admin.products.index')->with(
+            'success',
+            $isVisible
+                ? "Berhasil menampilkan {$affected} produk untuk affiliator."
+                : "Berhasil menyembunyikan {$affected} produk dari affiliator."
         );
     }
 
