@@ -234,6 +234,7 @@
                         <th>Kategori</th>
                         <th>Brand</th>
                         <th>Etalase</th>
+                        <th>Catatan Produk</th>
                         <th>Status</th>
                         <th>Pesan</th>
                     </tr>
@@ -246,6 +247,7 @@
                             <td>{{ $row['category'] }}</td>
                             <td>{{ $row['brand'] }}</td>
                             <td>{{ $row['showcase'] }}</td>
+                            <td>{{ $row['product_note'] !== '' ? $row['product_note'] : '-' }}</td>
                             <td>
                                 @if($row['status'] === 'valid')
                                     <span class="badge text-bg-success">valid</span>
@@ -269,6 +271,7 @@
             <table class="table mb-0">
                 <thead>
                 <tr>
+                    <th>Gambar</th>
                     <th>Nama</th>
                     <th>Bentuk Kamera</th>
                     <th>Ukuran Antigores</th>
@@ -282,6 +285,13 @@
                 <tbody id="adminProductsTableBody">
                 @forelse($products as $product)
                     <tr>
+                        <td>
+                            @if($product->category->image_path)
+                                <img src="{{ asset('storage/'.$product->category->image_path) }}" alt="{{ $product->category->name }}" class="rounded" style="width: 42px; height: 42px; object-fit: cover;">
+                            @else
+                                -
+                            @endif
+                        </td>
                         <td>{{ $product->name }}</td>
                         <td>{{ $product->phoneType->camera_shape ?? '-' }}</td>
                         <td>{{ $product->phoneType->antigores_size ?? '-' }}</td>
@@ -318,7 +328,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>
+                    <tr><td colspan="9" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -349,12 +359,15 @@
 
             const renderRows = (items) => {
                 if (!items.length) {
-                    tableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>';
                     return;
                 }
 
                 tableBody.innerHTML = items.map((item) => `
                     <tr>
+                        <td>
+                            ${item.category_image ? `<img src="${item.category_image}" alt="${item.category}" class="rounded" style="width: 42px; height: 42px; object-fit: cover;">` : '-'}
+                        </td>
                         <td>${item.name}</td>
                         <td>${item.camera_shape ?? '-'}</td>
                         <td>${item.antigores_size ?? '-'}</td>

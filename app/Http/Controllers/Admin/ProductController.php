@@ -204,6 +204,7 @@ class ProductController extends Controller
                         'category_id' => $row['category_id'],
                         'brand_id' => $row['brand_id'],
                         'phone_type_id' => $row['phone_type_id'],
+                        'product_note' => $row['product_note'] ?? null,
                     ]);
                     $created++;
                 });
@@ -252,23 +253,10 @@ class ProductController extends Controller
         $path = storage_path('app/template-import-produk.xlsx');
         $writer = new Writer;
         $writer->openToFile($path);
-        $writer->addRow(Row::fromValues(['nama_produk', 'kategori', 'brand', 'etalase']));
-        $writer->addRow(Row::fromValues(['Antigores Redmi 15C', 'Kaca Bening', 'Xiaomi', '55']));
-        $writer->addRow(Row::fromValues([]));
-        $writer->addRow(Row::fromValues(['Referensi Kategori']));
-        foreach (Category::query()->orderBy('name')->pluck('name') as $name) {
-            $writer->addRow(Row::fromValues([$name]));
-        }
-        $writer->addRow(Row::fromValues([]));
-        $writer->addRow(Row::fromValues(['Referensi Brand']));
-        foreach (Brand::query()->whereNull('category_id')->orderBy('name')->pluck('name') as $name) {
-            $writer->addRow(Row::fromValues([$name]));
-        }
-        $writer->addRow(Row::fromValues([]));
-        $writer->addRow(Row::fromValues(['Referensi Etalase']));
-        foreach (PhoneType::query()->orderBy('name')->pluck('name') as $name) {
-            $writer->addRow(Row::fromValues([$name]));
-        }
+        $writer->addRow(Row::fromValues(['nama_produk', 'kategori', 'brand', 'etalase', 'catatan_produk']));
+        $writer->addRow(Row::fromValues(['Antigores iPhone 13', 'Kaca Bening', 'Apple', '12', 'Model notch kecil, cek sudut kiri atas']));
+        $writer->addRow(Row::fromValues(['Antigores Samsung A15', 'Kaca Privasi', 'Samsung', '34', 'Versi kamera 3 lensa']));
+        $writer->addRow(Row::fromValues(['Antigores Redmi Note 13', 'Kaca Bening', 'Xiaomi', '55', 'Pastikan ukuran sesuai varian 4G']));
         $writer->close();
 
         return response()->download(
@@ -306,8 +294,9 @@ class ProductController extends Controller
                     $categoryName = trim((string) ($cells[1] ?? ''));
                     $brandName = trim((string) ($cells[2] ?? ''));
                     $showcaseName = trim((string) ($cells[3] ?? ''));
+                    $productNote = trim((string) ($cells[4] ?? ''));
 
-                    if ($name === '' && $categoryName === '' && $brandName === '' && $showcaseName === '') {
+                    if ($name === '' && $categoryName === '' && $brandName === '' && $showcaseName === '' && $productNote === '') {
                         continue;
                     }
 
@@ -317,6 +306,7 @@ class ProductController extends Controller
                         'category' => $categoryName,
                         'brand' => $brandName,
                         'showcase' => $showcaseName,
+                        'product_note' => $productNote,
                         'status' => 'error',
                         'message' => '',
                     ];
@@ -376,6 +366,7 @@ class ProductController extends Controller
                         'category_id' => $category->id,
                         'brand_id' => $brand->id,
                         'phone_type_id' => $phoneType->id,
+                        'product_note' => $productNote !== '' ? $productNote : null,
                     ];
                     $validCount++;
                 }
