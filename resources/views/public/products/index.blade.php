@@ -396,12 +396,15 @@
                         <div class="bg-light d-flex align-items-center justify-content-center text-secondary" style="height: 260px;">Tanpa Gambar</div>
                     @endif
                     <div class="card-body p-3">
-                        <h2 class="h6 mb-2">{{ $item['name'] }}</h2>
-                        <p class="mb-1 small text-secondary">{{ $item['category'] }}</p>
-                        <p class="mb-1 small text-secondary">Detail Etalase: {{ $item['showcase'] ?? '-' }}</p>
-                        <p class="mb-1 small text-secondary">Ukuran Antigores: {{ $item['antigores_size'] ?? '-' }}</p>
-                        <p class="mb-2 small text-secondary">Bentuk Kamera: {{ $item['camera_shape'] ?? '-' }}</p>
-                        <span class="badge text-bg-success">Etalase Aktif</span>
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <h2 class="h6 mb-0">{{ $item['name'] }}</h2>
+                            <p class="mb-0 small text-secondary text-end">{{ $item['category'] }}</p>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <p class="mb-0 small text-secondary">Posisi Etalase: <span class="badge text-bg-success">{{ $item['showcase'] ?? '-' }}</span></p>
+                            <p class="mb-0 small text-secondary text-end">Bentuk Kamera: {{ $item['camera_shape'] ?? '-' }}</p>
+                        </div>
+                        <p class="mb-0 mt-1 small text-secondary">Ukuran Antigores: {{ $item['antigores_size'] ?? '-' }}</p>
                     </div>
                 </div>
             </div>
@@ -468,12 +471,15 @@
                             ? `<img src="${item.image_url}" alt="${escapeHtml(item.name)}" class="card-img-top bg-light" style="height: 260px; object-fit: contain;" loading="lazy">`
                             : '<div class="bg-light d-flex align-items-center justify-content-center text-secondary" style="height: 260px;">Tanpa Gambar</div>'}
                         <div class="card-body p-3">
-                            <h2 class="h6 mb-2">${escapeHtml(item.name)}</h2>
-                            <p class="mb-1 small text-secondary">${escapeHtml(item.category)}</p>
-                            <p class="mb-1 small text-secondary">Detail Etalase: ${escapeHtml(item.showcase || '-')}</p>
-                            <p class="mb-1 small text-secondary">Ukuran Antigores: ${escapeHtml(item.antigores_size || '-')}</p>
-                            <p class="mb-2 small text-secondary">Bentuk Kamera: ${escapeHtml(item.camera_shape || '-')}</p>
-                            <span class="badge text-bg-success">Etalase Aktif</span>
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                <h2 class="h6 mb-0">${escapeHtml(item.name)}</h2>
+                                <p class="mb-0 small text-secondary text-end">${escapeHtml(item.category)}</p>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center gap-2">
+                                <p class="mb-0 small text-secondary">Posisi Etalase: <span class="badge text-bg-success">${escapeHtml(item.showcase || '-')}</span></p>
+                                <p class="mb-0 small text-secondary text-end">Bentuk Kamera: ${escapeHtml(item.camera_shape || '-')}</p>
+                            </div>
+                            <p class="mb-0 mt-1 small text-secondary">Ukuran Antigores: ${escapeHtml(item.antigores_size || '-')}</p>
                         </div>
                     </div>
                 </div>

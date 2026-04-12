@@ -446,10 +446,14 @@
                                 <div class="bg-light d-flex align-items-center justify-content-center text-secondary" style="height: 280px;">Tanpa Gambar</div>
                             @endif
                             <div class="card-body">
-                                <h2 class="h6 mb-2">{{ $product->name }}</h2>
-                                <p class="mb-1 text-secondary small">{{ $product->category->name }}</p>
-                                <p class="mb-2 text-secondary small">Bentuk Kamera: {{ $product->phoneType->camera_shape ?? '-' }}</p>
-                                <p class="mb-0"><span class="badge text-bg-success">Posisi Etalase: {{ $product->resolved_showcase }}</span></p>
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <h2 class="h6 mb-0">{{ $product->name }}</h2>
+                                    <p class="mb-0 text-secondary small text-end">{{ $product->category->name }}</p>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center gap-2">
+                                    <p class="mb-0 text-secondary small">Posisi Etalase: <span class="badge text-bg-success">{{ $product->resolved_showcase }}</span></p>
+                                    <p class="mb-0 text-secondary small text-end">Bentuk Kamera: {{ $product->phoneType->camera_shape ?? '-' }}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -527,10 +531,14 @@
                                 ? `<img src="${item.category_image}" alt="${item.category}" class="card-img-top bg-light" style="height: 280px; object-fit: contain;">`
                                 : '<div class="bg-light d-flex align-items-center justify-content-center text-secondary" style="height: 280px;">Tanpa Gambar</div>'}
                             <div class="card-body">
-                                <h2 class="h6 mb-2">${item.name}</h2>
-                                <p class="mb-1 text-secondary small">${item.category}</p>
-                                <p class="mb-2 text-secondary small">Bentuk Kamera: ${item.camera_shape ?? '-'}</p>
-                                <p class="mb-0"><span class="badge text-bg-success">Posisi Etalase: ${item.showcase}</span></p>
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <h2 class="h6 mb-0">${item.name}</h2>
+                                    <p class="mb-0 text-secondary small text-end">${item.category}</p>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center gap-2">
+                                    <p class="mb-0 text-secondary small">Posisi Etalase: <span class="badge text-bg-success">${item.showcase}</span></p>
+                                    <p class="mb-0 text-secondary small text-end">Bentuk Kamera: ${item.camera_shape ?? '-'}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
