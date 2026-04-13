@@ -9,6 +9,82 @@
         #adminBulkActions {
             gap: .5rem;
         }
+        #adminProductsTopToolbar {
+            background: #f6f8fc;
+            border-radius: 999px;
+            padding: .55rem;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: .45rem;
+        }
+        #adminProductsTopToolbar .toolbar-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 999px;
+            border: 0;
+            background: #eef2f8;
+            color: #475467;
+            font-size: 1.4rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        #adminProductsTopToolbar .toolbar-btn.btn-add {
+            background: #00cc45;
+            color: #fff;
+            font-size: 2rem;
+        }
+        #adminProductsKeywordWrap {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            padding: 0 .65rem;
+            gap: .5rem;
+        }
+        #adminProductsKeywordWrap .keyword-spacer {
+            flex: 1 1 auto;
+        }
+        #adminProductsKeywordWrap .keyword-inline-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 999px;
+            border: 0;
+            background: #f2f5fb;
+            color: #475467;
+            font-size: 1.35rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #adminProductsKeywordWrap .keyword-inline-btn.d-none {
+            display: none !important;
+        }
+        #adminProductsKeywordWrap .keyword-icon {
+            color: #98a2b3;
+            font-size: 1.25rem;
+        }
+        #adminProductsKeywordWrap input {
+            border: 0 !important;
+            box-shadow: none !important;
+            padding: 0;
+            font-size: 1.1rem;
+        }
+        #adminProductsAdvancedPanel {
+            border: 1px solid #e5ebf4;
+            border-radius: .9rem;
+            padding: .85rem;
+            background: #fff;
+        }
+        #adminProductsAdvancedPanel.d-none {
+            display: none !important;
+        }
         #adminProductsFilterForm .form-label {
             margin-bottom: .35rem;
         }
@@ -116,6 +192,162 @@
             .admin-product-actions form .btn {
                 width: 100%;
             }
+            #adminProductsTableBody td::before {
+                content: none !important;
+                display: none !important;
+            }
+            #adminProductsTableBody tr {
+                display: grid;
+                grid-template-columns: 56px 1fr auto 28px;
+                gap: .6rem .75rem;
+                border: 1px solid #e5ebf4;
+                border-radius: .9rem;
+                padding: .85rem;
+                margin: .75rem;
+                background: #fff;
+                overflow: visible;
+            }
+            #adminProductsTableBody .product-cell-camera,
+            #adminProductsTableBody .product-cell-size,
+            #adminProductsTableBody .product-cell-showcase,
+            #adminProductsTableBody .product-cell-brand,
+            #adminProductsTableBody .product-cell-note {
+                display: none;
+            }
+            #adminProductsTableBody .product-cell-select {
+                grid-column: 3;
+                grid-row: 1;
+                align-self: start;
+                text-align: right;
+                padding: 0;
+                margin-top: .15rem;
+            }
+            #adminProductsTableBody .product-cell-image {
+                grid-column: 1;
+                grid-row: 1 / span 2;
+                padding: 0;
+            }
+            #adminProductsTableBody .product-cell-name {
+                grid-column: 2;
+                grid-row: 1;
+                padding: 0;
+            }
+            #adminProductsTableBody .product-cell-visibility {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                padding: 0;
+                text-align: left;
+                border-top: 1px dashed #e8edf5;
+                padding-top: .65rem;
+                margin-top: .2rem;
+            }
+            #adminProductsTableBody .product-cell-actions {
+                grid-column: 4;
+                grid-row: 1;
+                padding: 0;
+                text-align: right;
+                align-self: start;
+            }
+            #adminProductsTableBody .product-cell-actions .admin-product-actions-desktop {
+                display: none !important;
+            }
+            .admin-mobile-actions {
+                position: relative;
+                display: inline-block;
+            }
+            .admin-mobile-actions summary {
+                list-style: none;
+                cursor: pointer;
+                user-select: none;
+                width: 24px;
+                height: 24px;
+                border-radius: .35rem;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: #4b5563;
+                font-size: 20px;
+                line-height: 1;
+            }
+            .admin-mobile-actions summary::-webkit-details-marker {
+                display: none;
+            }
+            .admin-mobile-actions[open] summary {
+                background: #f2f5fb;
+            }
+            .admin-mobile-actions-menu {
+                position: absolute;
+                top: calc(100% + 6px);
+                right: 0;
+                width: 165px;
+                border: 1px solid #dbe4f0;
+                border-radius: .65rem;
+                background: #fff;
+                box-shadow: 0 .4rem 1.2rem rgba(25, 35, 52, .12);
+                padding: .45rem;
+                z-index: 20;
+                display: grid;
+                gap: .35rem;
+            }
+            .admin-mobile-actions-menu .btn {
+                width: 100%;
+                min-height: 38px;
+                font-size: .86rem;
+                padding-top: .35rem;
+                padding-bottom: .35rem;
+            }
+            .admin-mobile-actions-menu form {
+                margin: 0;
+            }
+            .product-mobile-visibility-label {
+                font-size: .82rem;
+                color: #6b7280;
+                margin-left: .5rem;
+            }
+            .product-name-title {
+                font-size: 1.15rem;
+                font-weight: 700;
+                color: #3f4ad1;
+                line-height: 1.25;
+            }
+            .product-name-sub {
+                color: #6b7280;
+                margin-top: .2rem;
+            }
+            .product-mobile-badges {
+                display: flex;
+                flex-wrap: wrap;
+                gap: .45rem;
+                margin-top: .55rem;
+            }
+            .product-mobile-badge {
+                display: inline-block;
+                border-radius: .6rem;
+                padding: .34rem .62rem;
+                font-size: .84rem;
+                line-height: 1.2;
+                background: #f4edff;
+                color: #5b2db6;
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .product-mobile-badge-outline {
+                background: #fff;
+                border: 1px solid #e7d9ff;
+            }
+            #adminProductsTableBody .product-cell-visibility .uiverse-switch {
+                margin-top: .2rem;
+            }
+        }
+        @media (min-width: 768px) {
+            .admin-mobile-actions {
+                display: none !important;
+            }
+            .product-mobile-visibility-label {
+                display: none !important;
+            }
         }
         @media (max-width: 374.98px) {
             #adminProductsHeaderActions,
@@ -147,57 +379,58 @@
             }
         }
     </style>
-    <div id="adminProductsHeader" class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h5 mb-0">Produk Antigores</h1>
-        <div id="adminProductsHeaderActions" class="d-flex">
-            <a href="{{ route('admin.products.template') }}" class="btn btn-outline-secondary btn-sm">Download Template Excel</a>
-            <a href="{{ route('admin.products.create') }}" class="btn btn-dark btn-sm">Tambah</a>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <form id="adminProductsFilterForm" method="GET" action="{{ route('admin.products.index') }}" data-search-url="{{ route('admin.products.search') }}" class="row g-2 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label">Cari Nama</label>
+    <div class="mb-3">
+        <form id="adminProductsFilterForm" method="GET" action="{{ route('admin.products.index') }}" data-search-url="{{ route('admin.products.search') }}">
+            <div id="adminProductsTopToolbar">
+                <div id="adminProductsKeywordWrap">
+                    <span class="keyword-icon">🔎</span>
                     <input type="text" name="keyword" class="form-control" value="{{ request('keyword') }}" placeholder="Cari nama produk / ukuran antigores">
+                    <span class="keyword-spacer"></span>
+                    <button type="button" class="keyword-inline-btn d-none" id="adminProductsClearKeywordBtn" aria-label="Reset keyword">✕</button>
+                    <button type="button" class="keyword-inline-btn" id="adminProductsTogglePanelBtn" aria-label="Buka panel filter">☰</button>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Kategori</label>
-                    <select id="filter_category_id" name="category_id" class="form-select">
-                        <option value="">Semua kategori</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}" @selected((string) request('category_id') === (string) $category->id)>{{ $category->name }}</option>
-                        @endforeach
-                    </select>
+                <a href="{{ route('admin.products.create') }}" class="toolbar-btn btn-add" aria-label="Tambah produk">+</a>
+            </div>
+            <div id="adminProductsAdvancedPanel" class="mt-2 d-none">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Kategori</label>
+                        <select id="filter_category_id" name="category_id" class="form-select">
+                            <option value="">Semua kategori</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" @selected((string) request('category_id') === (string) $category->id)>{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Brand</label>
+                        <select id="filter_brand_id" name="brand_id" class="form-select">
+                            <option value="">Semua brand</option>
+                            @foreach($brands as $brand)
+                                <option value="{{ $brand->id }}" @selected((string) request('brand_id') === (string) $brand->id)>{{ $brand->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Etalase</label>
+                        <select name="phone_type_id" class="form-select">
+                            <option value="">Semua etalase</option>
+                            @foreach($phoneTypes as $phoneType)
+                                <option value="{{ $phoneType->id }}" @selected((string) request('phone_type_id') === (string) $phoneType->id)>{{ $phoneType->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button class="btn btn-dark btn-sm">Filter</button>
+                        <a href="{{ route('admin.products.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+                        <a href="{{ route('admin.products.template') }}" class="btn btn-outline-secondary btn-sm ms-auto">Download Template</a>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Brand</label>
-                    <select id="filter_brand_id" name="brand_id" class="form-select">
-                        <option value="">Semua brand</option>
-                        @foreach($brands as $brand)
-                            <option value="{{ $brand->id }}" @selected((string) request('brand_id') === (string) $brand->id)>{{ $brand->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Etalase</label>
-                    <select name="phone_type_id" class="form-select">
-                        <option value="">Semua etalase</option>
-                        @foreach($phoneTypes as $phoneType)
-                            <option value="{{ $phoneType->id }}" @selected((string) request('phone_type_id') === (string) $phoneType->id)>{{ $phoneType->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-12 d-flex gap-2">
-                    <button class="btn btn-dark btn-sm">Filter</button>
-                    <a href="{{ route('admin.products.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
-                </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 
-    <div class="card border-0 shadow-sm mb-3">
+    <div class="card border-0 shadow-sm mb-3 d-none" id="adminProductsImportPanel">
         <div class="card-body">
             <form method="POST" action="{{ route('admin.products.import') }}" enctype="multipart/form-data" class="row g-2 align-items-end">
                 @csrf
@@ -309,21 +542,28 @@
                 <tbody id="adminProductsTableBody">
                 @forelse($products as $product)
                     <tr>
-                        <td>
+                        <td class="product-cell-select">
                             <input type="checkbox" class="bulk-product-checkbox" value="{{ $product->id }}" aria-label="Pilih produk {{ $product->name }}">
                         </td>
-                        <td>
+                        <td class="product-cell-image">
                             @if($product->category->image_path)
                                 <img src="{{ asset('storage/'.$product->category->image_path) }}" alt="{{ $product->category->name }}" class="rounded" style="width: 42px; height: 42px; object-fit: cover;">
                             @else
                                 -
                             @endif
                         </td>
-                        <td>{{ $product->name }}</td>
-                        <td>{{ $product->phoneType->camera_shape ?? '-' }}</td>
-                        <td>{{ $product->phoneType->antigores_size ?? '-' }}</td>
-                        <td>{{ $product->phoneType->name }}</td>
-                        <td>
+                        <td class="product-cell-name">
+                            <div class="product-name-title">{{ $product->name }}</div>
+                            <div class="product-name-sub d-md-none">{{ $product->phoneType->camera_shape ?? '-' }} {{ $product->phoneType->antigores_size ?? '-' }}</div>
+                            <div class="product-mobile-badges d-md-none">
+                                <span class="product-mobile-badge">{{ \Illuminate\Support\Str::limit($product->product_note, 40) ?: '-' }}</span>
+                                <span class="product-mobile-badge product-mobile-badge-outline">{{ $product->phoneType->name }}</span>
+                            </div>
+                        </td>
+                        <td class="product-cell-camera">{{ $product->phoneType->camera_shape ?? '-' }}</td>
+                        <td class="product-cell-size">{{ $product->phoneType->antigores_size ?? '-' }}</td>
+                        <td class="product-cell-showcase">{{ $product->phoneType->name }}</td>
+                        <td class="product-cell-brand">
                             <div class="d-flex align-items-center gap-2">
                                 @if($product->brand->image_path)
                                     <img src="{{ asset('storage/'.$product->brand->image_path) }}" alt="{{ $product->brand->name }}" class="rounded" style="width: 28px; height: 28px; object-fit: cover;">
@@ -331,8 +571,8 @@
                                 <span>{{ $product->brand->name }}</span>
                             </div>
                         </td>
-                        <td>{{ \Illuminate\Support\Str::limit($product->product_note, 80) ?: '-' }}</td>
-                        <td class="affiliator-visibility-cell">
+                        <td class="product-cell-note">{{ \Illuminate\Support\Str::limit($product->product_note, 80) ?: '-' }}</td>
+                        <td class="affiliator-visibility-cell product-cell-visibility">
                             <form method="POST" action="{{ route('admin.products.visibility', $product) }}" class="d-inline" data-confirm-visibility>
                                 @csrf
                                 @method('PATCH')
@@ -342,10 +582,11 @@
                                     <input class="visibility-switch" type="checkbox" role="switch" @checked($product->is_visible_for_affiliator)>
                                     <span class="uiverse-slider"></span>
                                 </label>
+                                <span class="product-mobile-visibility-label">Tampilkan untuk Affiliator</span>
                             </form>
                         </td>
-                        <td class="text-end">
-                            <div class="d-inline-flex admin-product-actions">
+                        <td class="text-end product-cell-actions">
+                            <div class="d-inline-flex admin-product-actions admin-product-actions-desktop">
                                 <a href="{{ route('admin.products.create', ['source_product_id' => $product->id, 'return_to' => url()->full()]) }}" class="btn btn-outline-dark btn-sm">Salin</a>
                                 <a href="{{ route('admin.products.edit', ['product' => $product, 'return_to' => url()->full()]) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                                 <form method="POST" action="{{ route('admin.products.destroy', $product) }}" class="d-inline" data-confirm-delete>
@@ -355,6 +596,19 @@
                                     <button class="btn btn-outline-danger btn-sm btn-delete">Delete</button>
                                 </form>
                             </div>
+                            <details class="admin-mobile-actions">
+                                <summary aria-label="Aksi Produk">⋮</summary>
+                                <div class="admin-mobile-actions-menu">
+                                    <a href="{{ route('admin.products.create', ['source_product_id' => $product->id, 'return_to' => url()->full()]) }}" class="btn btn-outline-dark btn-sm">Salin</a>
+                                    <a href="{{ route('admin.products.edit', ['product' => $product, 'return_to' => url()->full()]) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+                                    <form method="POST" action="{{ route('admin.products.destroy', $product) }}" data-confirm-delete>
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="redirect_to" value="{{ url()->full() }}">
+                                        <button class="btn btn-outline-danger btn-sm btn-delete">Delete</button>
+                                    </form>
+                                </div>
+                            </details>
                         </td>
                     </tr>
                 @empty
@@ -379,6 +633,10 @@
             const categorySelect = document.getElementById('filter_category_id');
             const brandSelect = document.getElementById('filter_brand_id');
             const showcaseSelect = filterForm.querySelector('select[name="phone_type_id"]');
+            const clearKeywordButton = document.getElementById('adminProductsClearKeywordBtn');
+            const togglePanelButton = document.getElementById('adminProductsTogglePanelBtn');
+            const advancedPanel = document.getElementById('adminProductsAdvancedPanel');
+            const importPanel = document.getElementById('adminProductsImportPanel');
             const tableBody = document.getElementById('adminProductsTableBody');
             const paginationInfo = document.getElementById('adminProductsPaginationInfo');
             const prevButton = document.getElementById('adminPrevPage');
@@ -464,24 +722,31 @@
 
                 tableBody.innerHTML = items.map((item) => `
                     <tr>
-                        <td>
+                        <td class="product-cell-select">
                             <input type="checkbox" class="bulk-product-checkbox" value="${item.id}" aria-label="Pilih produk ${item.name}">
                         </td>
-                        <td>
+                        <td class="product-cell-image">
                             ${item.category_image ? `<img src="${item.category_image}" alt="${item.category}" class="rounded" style="width: 42px; height: 42px; object-fit: cover;">` : '-'}
                         </td>
-                        <td>${item.name}</td>
-                        <td>${item.camera_shape ?? '-'}</td>
-                        <td>${item.antigores_size ?? '-'}</td>
-                        <td>${item.showcase}</td>
-                        <td>
+                        <td class="product-cell-name">
+                            <div class="product-name-title">${item.name}</div>
+                            <div class="product-name-sub d-md-none">${item.camera_shape ?? '-'} ${item.antigores_size ?? '-'}</div>
+                            <div class="product-mobile-badges d-md-none">
+                                <span class="product-mobile-badge">${item.product_note ? item.product_note : '-'}</span>
+                                <span class="product-mobile-badge product-mobile-badge-outline">${item.showcase}</span>
+                            </div>
+                        </td>
+                        <td class="product-cell-camera">${item.camera_shape ?? '-'}</td>
+                        <td class="product-cell-size">${item.antigores_size ?? '-'}</td>
+                        <td class="product-cell-showcase">${item.showcase}</td>
+                        <td class="product-cell-brand">
                             <div class="d-flex align-items-center gap-2">
                                 ${item.brand_image ? `<img src="${item.brand_image}" alt="${item.brand}" class="rounded" style="width: 28px; height: 28px; object-fit: cover;">` : ''}
                                 <span>${item.brand}</span>
                             </div>
                         </td>
-                        <td>${item.product_note ? item.product_note : '-'}</td>
-                        <td class="affiliator-visibility-cell">
+                        <td class="product-cell-note">${item.product_note ? item.product_note : '-'}</td>
+                        <td class="affiliator-visibility-cell product-cell-visibility">
                             <form method="POST" action="${item.visibility_url}" class="d-inline" data-confirm-visibility>
                                 <input type="hidden" name="_token" value="${csrfToken}">
                                 <input type="hidden" name="_method" value="PATCH">
@@ -491,10 +756,11 @@
                                     <input class="visibility-switch" type="checkbox" role="switch" ${item.is_visible_for_affiliator ? 'checked' : ''}>
                                     <span class="uiverse-slider"></span>
                                 </label>
+                                <span class="product-mobile-visibility-label">Tampilkan untuk Affiliator</span>
                             </form>
                         </td>
-                        <td class="text-end">
-                            <div class="d-inline-flex admin-product-actions">
+                        <td class="text-end product-cell-actions">
+                            <div class="d-inline-flex admin-product-actions admin-product-actions-desktop">
                                 <a href="{{ route('admin.products.create') }}?source_product_id=${item.id}&return_to=${encodeURIComponent(window.location.pathname + window.location.search)}" class="btn btn-outline-dark btn-sm">Salin</a>
                                 <a href="${item.edit_url}${item.edit_url.includes('?') ? '&' : '?'}return_to=${encodeURIComponent(window.location.pathname + window.location.search)}" class="btn btn-outline-primary btn-sm">Edit</a>
                                 <form method="POST" action="${item.delete_url}" class="d-inline" data-confirm-delete>
@@ -504,6 +770,19 @@
                                     <button class="btn btn-outline-danger btn-sm btn-delete">Delete</button>
                                 </form>
                             </div>
+                            <details class="admin-mobile-actions">
+                                <summary aria-label="Aksi Produk">⋮</summary>
+                                <div class="admin-mobile-actions-menu">
+                                    <a href="{{ route('admin.products.create') }}?source_product_id=${item.id}&return_to=${encodeURIComponent(window.location.pathname + window.location.search)}" class="btn btn-outline-dark btn-sm">Salin</a>
+                                    <a href="${item.edit_url}${item.edit_url.includes('?') ? '&' : '?'}return_to=${encodeURIComponent(window.location.pathname + window.location.search)}" class="btn btn-outline-primary btn-sm">Edit</a>
+                                    <form method="POST" action="${item.delete_url}" data-confirm-delete>
+                                        <input type="hidden" name="_token" value="${csrfToken}">
+                                        <input type="hidden" name="_method" value="DELETE">
+                                        <input type="hidden" name="redirect_to" value="${window.location.pathname}${window.location.search}">
+                                        <button class="btn btn-outline-danger btn-sm btn-delete">Delete</button>
+                                    </form>
+                                </div>
+                            </details>
                         </td>
                     </tr>
                 `).join('');
@@ -544,11 +823,36 @@
                     loadProducts(1);
                 }, 300);
             };
+            const syncKeywordActionButtons = () => {
+                clearKeywordButton.classList.toggle('d-none', keywordInput.value.trim().length === 0);
+            };
+
+            const setPanelVisibility = (isVisible) => {
+                advancedPanel.classList.toggle('d-none', !isVisible);
+                importPanel.classList.toggle('d-none', !isVisible);
+            };
+
+            const hasActiveAdvancedFilter = !!(categorySelect.value || brandSelect.value || showcaseSelect.value);
+            setPanelVisibility(hasActiveAdvancedFilter);
 
             categorySelect.addEventListener('change', triggerRealtimeFilter);
             brandSelect.addEventListener('change', triggerRealtimeFilter);
             showcaseSelect.addEventListener('change', triggerRealtimeFilter);
-            keywordInput.addEventListener('input', triggerRealtimeFilter);
+            keywordInput.addEventListener('input', () => {
+                syncKeywordActionButtons();
+                triggerRealtimeFilter();
+            });
+            clearKeywordButton.addEventListener('click', () => {
+                keywordInput.value = '';
+                syncKeywordActionButtons();
+                triggerRealtimeFilter();
+                keywordInput.focus();
+            });
+            togglePanelButton.addEventListener('click', () => {
+                const isCurrentlyVisible = !advancedPanel.classList.contains('d-none');
+                setPanelVisibility(!isCurrentlyVisible);
+            });
+            syncKeywordActionButtons();
             if (window.jQuery) {
                 window.jQuery(categorySelect).on('select2:select select2:clear select2:unselect', triggerRealtimeFilter);
                 window.jQuery(brandSelect).on('select2:select select2:clear select2:unselect', triggerRealtimeFilter);
