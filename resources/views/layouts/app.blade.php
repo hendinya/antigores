@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2f6fdd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="AntiGores">
     <title>{{ $title ?? 'Manajemen Antigores' }}</title>
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -387,7 +392,13 @@
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('login') ? 'active' : '' }}" href="{{ route('login') }}">Login Affiliator</a>
                     </li>
+                    <li class="nav-item d-flex align-items-center">
+                        <button class="btn btn-outline-light btn-sm d-none" id="installPwaBtn" type="button">Install App</button>
+                    </li>
                 @else
+                    <li class="nav-item d-flex align-items-center me-2">
+                        <button class="btn btn-outline-light btn-sm d-none" id="installPwaBtn" type="button">Install App</button>
+                    </li>
                     <li class="nav-item d-flex align-items-center text-white-50 me-3 small">
                         {{ auth()->user()->name }} ({{ auth()->user()->role }})
                     </li>
@@ -567,6 +578,46 @@
         };
 
         initializeSelect2();
+
+        const installPwaButton = document.getElementById('installPwaBtn');
+        let deferredInstallPrompt = null;
+        const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        const setInstallButtonVisible = (isVisible) => {
+            if (!installPwaButton) {
+                return;
+            }
+            installPwaButton.classList.toggle('d-none', !isVisible);
+        };
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('{{ asset('sw.js') }}').catch(() => {});
+            });
+        }
+
+        if (isStandaloneMode) {
+            setInstallButtonVisible(false);
+        } else {
+            setInstallButtonVisible(false);
+            window.addEventListener('beforeinstallprompt', (event) => {
+                event.preventDefault();
+                deferredInstallPrompt = event;
+                setInstallButtonVisible(true);
+            });
+            window.addEventListener('appinstalled', () => {
+                deferredInstallPrompt = null;
+                setInstallButtonVisible(false);
+            });
+            installPwaButton?.addEventListener('click', async () => {
+                if (!deferredInstallPrompt) {
+                    return;
+                }
+                deferredInstallPrompt.prompt();
+                await deferredInstallPrompt.userChoice;
+                deferredInstallPrompt = null;
+                setInstallButtonVisible(false);
+            });
+        }
 
         document.querySelectorAll('img').forEach((image) => {
             if (!image.getAttribute('loading')) {

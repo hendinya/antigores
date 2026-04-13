@@ -1,0 +1,18 @@
+{
+  "name": "AntiGores",
+  "short_name": "AntiGores",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f8ff",
+  "theme_color": "#2f6fdd",
+  "description": "Katalog dan manajemen produk antigores.",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon",
+      "purpose": "any"
+    }
+  ]
+}
