@@ -598,7 +598,7 @@
         if (isStandaloneMode) {
             setInstallButtonVisible(false);
         } else {
-            setInstallButtonVisible(false);
+            setInstallButtonVisible(true);
             window.addEventListener('beforeinstallprompt', (event) => {
                 event.preventDefault();
                 deferredInstallPrompt = event;
@@ -610,6 +610,12 @@
             });
             installPwaButton?.addEventListener('click', async () => {
                 if (!deferredInstallPrompt) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Install App',
+                        text: 'Jika popup install belum muncul, buka menu browser (⋮) lalu pilih "Add to Home screen" atau "Install app".',
+                        confirmButtonText: 'OK',
+                    });
                     return;
                 }
                 deferredInstallPrompt.prompt();
