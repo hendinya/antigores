@@ -384,10 +384,10 @@
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="xiaomi"><img src="{{ asset('assets/brand-logos/xiaomi.svg') }}?v=20260412b" alt="Xiaomi"><span>Xiaomi</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="oppo"><img src="{{ asset('assets/brand-logos/oppo.svg') }}" alt="Oppo"><span>Oppo</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="vivo"><img src="{{ asset('assets/brand-logos/vivo.svg') }}" alt="Vivo"><span>Vivo</span></button>
+                    <button type="button" class="brand-shortcut-btn" data-brand-keyword="iqoo"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Iqoo.svg" alt="iQOO"><span>iQOO</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="infinix"><img src="{{ asset('assets/brand-logos/infinix.svg') }}?v=20260412b" alt="Infinix"><span>Infinix</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="tecno"><img src="{{ asset('assets/brand-logos/tecno.svg') }}" alt="Tecno"><span>Tecno</span></button>
                     <button type="button" class="brand-shortcut-btn" data-brand-keyword="itel"><img src="{{ asset('assets/brand-logos/itel.svg') }}?v=20260412b" alt="Itel"><span>Itel</span></button>
-                    <button type="button" class="brand-shortcut-btn" data-brand-keyword="huawei"><img src="{{ asset('assets/brand-logos/huawei.svg') }}?v=20260412b" alt="Huawei"><span>Huawei</span></button>
                 </div>
                 <div class="row g-2" id="productsSearchFields">
                     <div class="col-lg-8">
