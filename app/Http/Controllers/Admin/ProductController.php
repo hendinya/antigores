@@ -258,6 +258,7 @@ class ProductController extends Controller
                         'brand_id' => $row['brand_id'],
                         'phone_type_id' => $row['phone_type_id'],
                         'product_note' => $row['product_note'] ?? null,
+                        'is_visible_for_affiliator' => false,
                     ]);
                     $created++;
                 });
@@ -420,6 +421,7 @@ class ProductController extends Controller
                         'brand_id' => $brand->id,
                         'phone_type_id' => $phoneType->id,
                         'product_note' => $productNote !== '' ? $productNote : null,
+                        'is_visible_for_affiliator' => false,
                     ];
                     $validCount++;
                 }
