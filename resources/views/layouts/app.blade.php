@@ -539,7 +539,17 @@
             }
             $('select').each(function () {
                 const $select = $(this);
+                const selectElement = this;
                 if ($select.data('nativeSelect') === true || $select.data('nativeSelect') === 'true') {
+                    return;
+                }
+                // SweetAlert injects internal <select> elements for input mode.
+                // Do not enhance those, otherwise an empty Select2 field appears in popup dialogs.
+                if (
+                    $select.hasClass('swal2-select')
+                    || String($select.attr('id') || '').startsWith('swal2-')
+                    || (selectElement instanceof HTMLElement && !!selectElement.closest('.swal2-container'))
+                ) {
                     return;
                 }
                 if ($select.hasClass('select2-hidden-accessible')) {

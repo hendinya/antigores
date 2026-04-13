@@ -547,6 +547,11 @@
             brandSelect.addEventListener('change', triggerRealtimeFilter);
             showcaseSelect.addEventListener('change', triggerRealtimeFilter);
             keywordInput.addEventListener('input', triggerRealtimeFilter);
+            if (window.jQuery) {
+                window.jQuery(categorySelect).on('select2:select select2:clear select2:unselect', triggerRealtimeFilter);
+                window.jQuery(brandSelect).on('select2:select select2:clear select2:unselect', triggerRealtimeFilter);
+                window.jQuery(showcaseSelect).on('select2:select select2:clear select2:unselect', triggerRealtimeFilter);
+            }
             prevButton.addEventListener('click', () => loadProducts(currentPage - 1));
             nextButton.addEventListener('click', () => loadProducts(currentPage + 1));
             filterForm.addEventListener('submit', (event) => {
