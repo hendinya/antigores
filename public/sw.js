@@ -1,8 +1,10 @@
-const CACHE_NAME = 'antigores-cache-v1';
+const CACHE_NAME = 'antigores-cache-v2';
 const APP_SHELL = [
   '/',
   '/offline-products',
   '/manifest.webmanifest',
+  '/pwa/icon-192.png',
+  '/pwa/icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {
