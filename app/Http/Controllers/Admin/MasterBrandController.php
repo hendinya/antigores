@@ -93,7 +93,7 @@ class MasterBrandController extends Controller
         return $this->redirectToIndex($request)->with('success', 'Master brand berhasil diperbarui.');
     }
 
-    public function destroy(Brand $master_brand): RedirectResponse
+    public function destroy(Request $request, Brand $master_brand): RedirectResponse
     {
         abort_if($master_brand->category_id !== null, 404);
 

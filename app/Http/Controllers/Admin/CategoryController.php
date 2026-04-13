@@ -66,7 +66,7 @@ class CategoryController extends Controller
         return $this->redirectToIndex($request)->with('success', 'Kategori berhasil diperbarui.');
     }
 
-    public function destroy(Category $category): RedirectResponse
+    public function destroy(Request $request, Category $category): RedirectResponse
     {
         $productCount = $category->products()->count();
         $brandCount = $category->brands()->count();

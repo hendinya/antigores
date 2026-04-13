@@ -68,7 +68,7 @@ class PhoneTypeController extends Controller
         return $this->redirectToIndex($request)->with('success', 'Etalase berhasil diperbarui.');
     }
 
-    public function destroy(PhoneType $phoneType): RedirectResponse
+    public function destroy(Request $request, PhoneType $phoneType): RedirectResponse
     {
         $productCount = $phoneType->products()->count();
         if ($productCount > 0) {
