@@ -72,12 +72,20 @@ class ProductController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        $sourceProduct = null;
+        $sourceProductId = $request->integer('source_product_id');
+        if ($sourceProductId > 0) {
+            $sourceProduct = Product::query()->find($sourceProductId);
+        }
+
         return view('admin.products.create', [
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'brands' => Brand::query()->whereNull('category_id')->orderBy('name')->get(['id', 'name']),
             'phoneTypes' => PhoneType::query()->orderBy('name')->get(['id', 'name']),
+            'sourceProduct' => $sourceProduct,
+            'returnTo' => (string) $request->query('return_to', route('admin.products.index')),
         ]);
     }
 

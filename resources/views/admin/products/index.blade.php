@@ -346,6 +346,7 @@
                         </td>
                         <td class="text-end">
                             <div class="d-inline-flex admin-product-actions">
+                                <a href="{{ route('admin.products.create', ['source_product_id' => $product->id, 'return_to' => url()->full()]) }}" class="btn btn-outline-dark btn-sm">Salin</a>
                                 <a href="{{ route('admin.products.edit', ['product' => $product, 'return_to' => url()->full()]) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                                 <form method="POST" action="{{ route('admin.products.destroy', $product) }}" class="d-inline" data-confirm-delete>
                                     @csrf
@@ -494,6 +495,7 @@
                         </td>
                         <td class="text-end">
                             <div class="d-inline-flex admin-product-actions">
+                                <a href="{{ route('admin.products.create') }}?source_product_id=${item.id}&return_to=${encodeURIComponent(window.location.pathname + window.location.search)}" class="btn btn-outline-dark btn-sm">Salin</a>
                                 <a href="${item.edit_url}${item.edit_url.includes('?') ? '&' : '?'}return_to=${encodeURIComponent(window.location.pathname + window.location.search)}" class="btn btn-outline-primary btn-sm">Edit</a>
                                 <form method="POST" action="${item.delete_url}" class="d-inline" data-confirm-delete>
                                     <input type="hidden" name="_token" value="${csrfToken}">
