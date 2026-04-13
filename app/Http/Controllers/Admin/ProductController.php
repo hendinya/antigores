@@ -148,14 +148,14 @@ class ProductController extends Controller
 
         $product->update($validated);
 
-        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil diperbarui.');
+        return $this->redirectToIndex($request)->with('success', 'Produk berhasil diperbarui.');
     }
 
-    public function destroy(Product $product): RedirectResponse
+    public function destroy(Request $request, Product $product): RedirectResponse
     {
         $product->delete();
 
-        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil dihapus.');
+        return $this->redirectToIndex($request)->with('success', 'Produk berhasil dihapus.');
     }
 
     public function bulkDestroy(Request $request): RedirectResponse
@@ -167,7 +167,7 @@ class ProductController extends Controller
 
         $deleted = Product::query()->whereIn('id', $validated['product_ids'])->delete();
 
-        return redirect()->route('admin.products.index')->with('success', "Berhasil menghapus {$deleted} produk.");
+        return $this->redirectToIndex($request)->with('success', "Berhasil menghapus {$deleted} produk.");
     }
 
     public function updateVisibility(Request $request, Product $product): RedirectResponse
@@ -179,7 +179,7 @@ class ProductController extends Controller
         $isVisible = (bool) $validated['is_visible_for_affiliator'];
         $product->update(['is_visible_for_affiliator' => $isVisible]);
 
-        return redirect()->route('admin.products.index')->with(
+        return $this->redirectToIndex($request)->with(
             'success',
             $isVisible
                 ? 'Produk ditampilkan untuk affiliator.'
@@ -201,12 +201,24 @@ class ProductController extends Controller
 
         $isVisible = (bool) $validated['is_visible_for_affiliator'];
 
-        return redirect()->route('admin.products.index')->with(
+        return $this->redirectToIndex($request)->with(
             'success',
             $isVisible
                 ? "Berhasil menampilkan {$affected} produk untuk affiliator."
                 : "Berhasil menyembunyikan {$affected} produk dari affiliator."
         );
+    }
+
+    private function redirectToIndex(Request $request): RedirectResponse
+    {
+        return redirect()->to($this->redirectPath($request));
+    }
+
+    private function redirectPath(Request $request): string
+    {
+        $path = (string) $request->input('redirect_to', route('admin.products.index'));
+
+        return str_starts_with($path, '/') ? $path : route('admin.products.index');
     }
 
     public function import(Request $request): RedirectResponse

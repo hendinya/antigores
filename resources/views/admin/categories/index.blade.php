@@ -28,10 +28,11 @@
                         </td>
                         <td>{{ $category->name }}</td>
                         <td class="text-end">
-                            <a href="{{ route('admin.categories.edit', $category) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+                            <a href="{{ route('admin.categories.edit', ['category' => $category, 'return_to' => url()->full()]) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                             <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" class="d-inline" data-confirm-delete>
                                 @csrf
                                 @method('DELETE')
+                                <input type="hidden" name="redirect_to" value="{{ url()->full() }}">
                                 <button class="btn btn-outline-danger btn-sm btn-delete">Delete</button>
                             </form>
                         </td>

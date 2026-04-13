@@ -18,7 +18,8 @@ class MasterBrandController extends Controller
         $brands = Brand::query()
             ->whereNull('category_id')
             ->orderBy('name')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         return view('admin.master-brands.index', compact('brands'));
     }
@@ -89,7 +90,7 @@ class MasterBrandController extends Controller
 
         $master_brand->update($validated);
 
-        return redirect()->route('admin.master-brands.index')->with('success', 'Master brand berhasil diperbarui.');
+        return $this->redirectToIndex($request)->with('success', 'Master brand berhasil diperbarui.');
     }
 
     public function destroy(Brand $master_brand): RedirectResponse
@@ -99,7 +100,7 @@ class MasterBrandController extends Controller
         $productCount = $master_brand->products()->count();
         if ($productCount > 0) {
             return redirect()
-                ->route('admin.master-brands.index')
+                ->to($this->redirectPath($request))
                 ->with('error', "Master brand tidak dapat dihapus karena masih digunakan oleh {$productCount} produk.");
         }
 
@@ -110,10 +111,22 @@ class MasterBrandController extends Controller
             $master_brand->delete();
         } catch (QueryException) {
             return redirect()
-                ->route('admin.master-brands.index')
+                ->to($this->redirectPath($request))
                 ->with('error', 'Master brand tidak dapat dihapus karena masih terhubung dengan data lain.');
         }
 
-        return redirect()->route('admin.master-brands.index')->with('success', 'Master brand berhasil dihapus.');
+        return $this->redirectToIndex($request)->with('success', 'Master brand berhasil dihapus.');
+    }
+
+    private function redirectToIndex(Request $request): RedirectResponse
+    {
+        return redirect()->to($this->redirectPath($request));
+    }
+
+    private function redirectPath(Request $request): string
+    {
+        $path = (string) $request->input('redirect_to', route('admin.master-brands.index'));
+
+        return str_starts_with($path, '/') ? $path : route('admin.master-brands.index');
     }
 }

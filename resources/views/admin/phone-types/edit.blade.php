@@ -1,12 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
+    @php($returnTo = request('return_to', route('admin.phone-types.index')))
     <h1 class="h5 mb-3">Edit Etalase</h1>
     <div class="card border-0 shadow-sm">
         <div class="card-body">
             <form method="POST" action="{{ route('admin.phone-types.update', $phoneType) }}" class="vstack gap-3">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="redirect_to" value="{{ $returnTo }}">
                 <div>
                     <label class="form-label">Nama Etalase</label>
                     <input type="text" name="name" class="form-control" value="{{ old('name', $phoneType->name) }}" required>
@@ -29,7 +31,7 @@
                 </div>
                 <div class="d-flex gap-2">
                     <button class="btn btn-dark">Update</button>
-                    <a href="{{ route('admin.phone-types.index') }}" class="btn btn-outline-secondary">Batal</a>
+                    <a href="{{ $returnTo }}" class="btn btn-outline-secondary">Batal</a>
                 </div>
             </form>
         </div>

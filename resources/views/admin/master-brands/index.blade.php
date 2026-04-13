@@ -28,10 +28,11 @@
                         </td>
                         <td>{{ $brand->name }}</td>
                         <td class="text-end">
-                            <a href="{{ route('admin.master-brands.edit', $brand) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+                            <a href="{{ route('admin.master-brands.edit', ['master_brand' => $brand, 'return_to' => url()->full()]) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                             <form method="POST" action="{{ route('admin.master-brands.destroy', $brand) }}" class="d-inline" data-confirm-delete>
                                 @csrf
                                 @method('DELETE')
+                                <input type="hidden" name="redirect_to" value="{{ url()->full() }}">
                                 <button class="btn btn-outline-danger btn-sm btn-delete">Delete</button>
                             </form>
                         </td>

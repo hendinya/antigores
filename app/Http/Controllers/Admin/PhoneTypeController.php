@@ -65,7 +65,7 @@ class PhoneTypeController extends Controller
 
         $phoneType->update($validated);
 
-        return redirect()->route('admin.phone-types.index')->with('success', 'Etalase berhasil diperbarui.');
+        return $this->redirectToIndex($request)->with('success', 'Etalase berhasil diperbarui.');
     }
 
     public function destroy(PhoneType $phoneType): RedirectResponse
@@ -73,7 +73,7 @@ class PhoneTypeController extends Controller
         $productCount = $phoneType->products()->count();
         if ($productCount > 0) {
             return redirect()
-                ->route('admin.phone-types.index')
+                ->to($this->redirectPath($request))
                 ->with('error', "Etalase tidak dapat dihapus karena masih digunakan oleh {$productCount} produk.");
         }
 
@@ -81,10 +81,22 @@ class PhoneTypeController extends Controller
             $phoneType->delete();
         } catch (QueryException) {
             return redirect()
-                ->route('admin.phone-types.index')
+                ->to($this->redirectPath($request))
                 ->with('error', 'Etalase tidak dapat dihapus karena masih terhubung dengan data lain.');
         }
 
-        return redirect()->route('admin.phone-types.index')->with('success', 'Etalase berhasil dihapus.');
+        return $this->redirectToIndex($request)->with('success', 'Etalase berhasil dihapus.');
+    }
+
+    private function redirectToIndex(Request $request): RedirectResponse
+    {
+        return redirect()->to($this->redirectPath($request));
+    }
+
+    private function redirectPath(Request $request): string
+    {
+        $path = (string) $request->input('redirect_to', route('admin.phone-types.index'));
+
+        return str_starts_with($path, '/') ? $path : route('admin.phone-types.index');
     }
 }

@@ -14,7 +14,7 @@ class CategoryController extends Controller
 {
     public function index(): View
     {
-        $categories = Category::query()->orderBy('name')->paginate(10);
+        $categories = Category::query()->orderBy('name')->paginate(10)->withQueryString();
 
         return view('admin.categories.index', compact('categories'));
     }
@@ -63,7 +63,7 @@ class CategoryController extends Controller
 
         $category->update($validated);
 
-        return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil diperbarui.');
+        return $this->redirectToIndex($request)->with('success', 'Kategori berhasil diperbarui.');
     }
 
     public function destroy(Category $category): RedirectResponse
@@ -72,7 +72,7 @@ class CategoryController extends Controller
         $brandCount = $category->brands()->count();
         if ($productCount > 0 || $brandCount > 0) {
             return redirect()
-                ->route('admin.categories.index')
+                ->to($this->redirectPath($request))
                 ->with('error', "Kategori tidak dapat dihapus karena masih digunakan oleh {$productCount} produk dan {$brandCount} brand.");
         }
 
@@ -83,10 +83,22 @@ class CategoryController extends Controller
             $category->delete();
         } catch (QueryException) {
             return redirect()
-                ->route('admin.categories.index')
+                ->to($this->redirectPath($request))
                 ->with('error', 'Kategori tidak dapat dihapus karena masih terhubung dengan data lain.');
         }
 
-        return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil dihapus.');
+        return $this->redirectToIndex($request)->with('success', 'Kategori berhasil dihapus.');
+    }
+
+    private function redirectToIndex(Request $request): RedirectResponse
+    {
+        return redirect()->to($this->redirectPath($request));
+    }
+
+    private function redirectPath(Request $request): string
+    {
+        $path = (string) $request->input('redirect_to', route('admin.categories.index'));
+
+        return str_starts_with($path, '/') ? $path : route('admin.categories.index');
     }
 }
