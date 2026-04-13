@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\BrandController as AdminBrandController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\MasterBrandController as AdminMasterBrandController;
+use App\Http\Controllers\Admin\MemberController as AdminMemberController;
 use App\Http\Controllers\Admin\PhoneTypeController as AdminPhoneTypeController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\AuthController;
@@ -48,5 +49,6 @@ Route::middleware('auth')->group(function () {
         Route::resource('brands', AdminBrandController::class)->except('show');
         Route::resource('phone-types', AdminPhoneTypeController::class)->except('show');
         Route::resource('products', AdminProductController::class)->except('show');
+        Route::resource('members', AdminMemberController::class)->only(['index', 'edit', 'update']);
     });
 });
