@@ -217,8 +217,15 @@ class ProductController extends Controller
     private function redirectPath(Request $request): string
     {
         $path = (string) $request->input('redirect_to', route('admin.products.index'));
+        if (str_starts_with($path, '/')) {
+            return $path;
+        }
+        $parsed = parse_url($path);
+        if (is_array($parsed) && isset($parsed['path']) && str_starts_with((string) $parsed['path'], '/')) {
+            return $parsed['path'].(isset($parsed['query']) ? '?'.$parsed['query'] : '');
+        }
 
-        return str_starts_with($path, '/') ? $path : route('admin.products.index');
+        return route('admin.products.index');
     }
 
     public function import(Request $request): RedirectResponse
