@@ -7,6 +7,7 @@ use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PublicProductController extends Controller
@@ -34,14 +35,16 @@ class PublicProductController extends Controller
             return response()->json(['items' => []]);
         }
 
-        $cacheKey = 'public_products_suggest:'.md5($keyword);
+        $cacheKey = 'public_products_suggest:v2:'.md5($keyword);
         $items = Cache::remember($cacheKey, now()->addSeconds(60), function () use ($keyword) {
             return Product::query()
                 ->where('name', 'like', "%{$keyword}%")
+                ->selectRaw('MIN(name) as name, LOWER(TRIM(name)) as name_key')
+                ->groupBy(DB::raw('LOWER(TRIM(name))'))
                 ->orderBy('name')
                 ->limit(8)
                 ->pluck('name')
-                ->unique()
+                ->unique(fn (string $name) => mb_strtolower(trim($name)))
                 ->values()
                 ->all();
         });

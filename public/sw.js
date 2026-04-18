@@ -1,4 +1,4 @@
-const CACHE_NAME = 'antigores-cache-v2';
+const CACHE_NAME = 'antigores-cache-v3';
 const APP_SHELL = [
   '/',
   '/offline-products',
@@ -36,6 +36,19 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => caches.match('/offline-products'))
+    );
+    return;
+  }
+
+  // Always use fresh network data for dynamic API endpoints.
+  if (
+    requestUrl.pathname.endsWith('/products/suggest') ||
+    requestUrl.pathname.endsWith('/offline-products/suggest') ||
+    requestUrl.pathname.endsWith('/products/search') ||
+    requestUrl.pathname.endsWith('/offline-products/search')
+  ) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
     );
     return;
   }

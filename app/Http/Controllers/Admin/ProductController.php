@@ -328,6 +328,34 @@ class ProductController extends Controller
         );
     }
 
+    public function exportFiltered(Request $request): BinaryFileResponse
+    {
+        $products = $this->filteredQuery($request)->get();
+        $filename = 'produk-filtered-'.now()->format('Ymd-His').'.xlsx';
+        $path = storage_path("app/{$filename}");
+
+        $writer = new Writer;
+        $writer->openToFile($path);
+        $writer->addRow(Row::fromValues(['nama_produk', 'kategori', 'brand', 'etalase', 'catatan_produk']));
+
+        foreach ($products as $product) {
+            $writer->addRow(Row::fromValues([
+                $product->name,
+                $product->category->name,
+                $product->brand->name,
+                $product->phoneType->name,
+                (string) ($product->product_note ?? ''),
+            ]));
+        }
+        $writer->close();
+
+        return response()->download(
+            $path,
+            $filename,
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        )->deleteFileAfterSend(true);
+    }
+
     private function parseImportFile(string $path): array
     {
         $reader = new XlsxReader;
@@ -466,6 +494,6 @@ class ProductController extends Controller
             ->when($categoryId, fn ($query) => $query->where('category_id', $categoryId))
             ->when($brandId, fn ($query) => $query->where('brand_id', $brandId))
             ->when($phoneTypeId, fn ($query) => $query->where('phone_type_id', $phoneTypeId))
-            ->orderBy('name');
+            ->orderByDesc('id');
     }
 }

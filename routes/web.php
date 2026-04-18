@@ -40,6 +40,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
         Route::get('products/search', [AdminProductController::class, 'search'])->name('products.search');
         Route::get('products/template', [AdminProductController::class, 'template'])->name('products.template');
+        Route::get('products/export-filtered', [AdminProductController::class, 'exportFiltered'])->name('products.export-filtered');
         Route::post('products/import', [AdminProductController::class, 'import'])->name('products.import');
         Route::post('products/bulk-delete', [AdminProductController::class, 'bulkDestroy'])->name('products.bulk-delete');
         Route::patch('products/bulk-visibility', [AdminProductController::class, 'bulkUpdateVisibility'])->name('products.bulk-visibility');
@@ -47,6 +48,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('categories', AdminCategoryController::class)->except('show');
         Route::resource('master-brands', AdminMasterBrandController::class)->except('show');
         Route::resource('brands', AdminBrandController::class)->except('show');
+        Route::get('phone-types/template', [AdminPhoneTypeController::class, 'template'])->name('phone-types.template');
+        Route::get('phone-types/export-filtered', [AdminPhoneTypeController::class, 'exportFiltered'])->name('phone-types.export-filtered');
+        Route::post('phone-types/import', [AdminPhoneTypeController::class, 'import'])->name('phone-types.import');
         Route::resource('phone-types', AdminPhoneTypeController::class)->except('show');
         Route::resource('products', AdminProductController::class)->except('show');
         Route::resource('members', AdminMemberController::class)->only(['index', 'edit', 'update']);

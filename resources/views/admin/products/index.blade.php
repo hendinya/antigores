@@ -424,6 +424,7 @@
                         <button class="btn btn-dark btn-sm">Filter</button>
                         <a href="{{ route('admin.products.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
                         <a href="{{ route('admin.products.template') }}" class="btn btn-outline-secondary btn-sm ms-auto">Download Template</a>
+                        <a href="{{ route('admin.products.export-filtered', request()->query()) }}" class="btn btn-outline-dark btn-sm" id="adminExportFilteredBtn" data-base-export-url="{{ route('admin.products.export-filtered') }}">Download Data Filter</a>
                     </div>
                 </div>
             </div>
@@ -635,6 +636,7 @@
             const showcaseSelect = filterForm.querySelector('select[name="phone_type_id"]');
             const clearKeywordButton = document.getElementById('adminProductsClearKeywordBtn');
             const togglePanelButton = document.getElementById('adminProductsTogglePanelBtn');
+            const exportFilteredButton = document.getElementById('adminExportFilteredBtn');
             const advancedPanel = document.getElementById('adminProductsAdvancedPanel');
             const importPanel = document.getElementById('adminProductsImportPanel');
             const tableBody = document.getElementById('adminProductsTableBody');
@@ -798,16 +800,34 @@
                 currentPage = pagination.current_page;
             };
 
-            const loadProducts = async (page = 1) => {
+            const buildFilterParams = (page = null) => {
                 const params = new URLSearchParams({
                     keyword: keywordInput.value.trim(),
                     category_id: categorySelect.value,
                     brand_id: brandSelect.value,
                     phone_type_id: showcaseSelect.value,
-                    page: String(page),
                 });
+
+                if (page !== null) {
+                    params.set('page', String(page));
+                }
+
+                return params;
+            };
+
+            const syncExportFilteredUrl = () => {
+                if (!(exportFilteredButton instanceof HTMLAnchorElement)) {
+                    return;
+                }
+                const params = buildFilterParams(null);
+                exportFilteredButton.href = `${exportFilteredButton.dataset.baseExportUrl}?${params.toString()}`;
+            };
+
+            const loadProducts = async (page = 1) => {
+                const params = buildFilterParams(page);
                 const nextUrl = `${window.location.pathname}?${params.toString()}`;
                 window.history.replaceState({}, '', nextUrl);
+                syncExportFilteredUrl();
 
                 const response = await fetch(`${searchUrl}?${params.toString()}`, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -835,16 +855,23 @@
             const hasActiveAdvancedFilter = !!(categorySelect.value || brandSelect.value || showcaseSelect.value);
             setPanelVisibility(hasActiveAdvancedFilter);
 
-            categorySelect.addEventListener('change', triggerRealtimeFilter);
-            brandSelect.addEventListener('change', triggerRealtimeFilter);
-            showcaseSelect.addEventListener('change', triggerRealtimeFilter);
+            const handleSelectFilterChange = () => {
+                syncExportFilteredUrl();
+                triggerRealtimeFilter();
+            };
+
+            categorySelect.addEventListener('change', handleSelectFilterChange);
+            brandSelect.addEventListener('change', handleSelectFilterChange);
+            showcaseSelect.addEventListener('change', handleSelectFilterChange);
             keywordInput.addEventListener('input', () => {
                 syncKeywordActionButtons();
+                syncExportFilteredUrl();
                 triggerRealtimeFilter();
             });
             clearKeywordButton.addEventListener('click', () => {
                 keywordInput.value = '';
                 syncKeywordActionButtons();
+                syncExportFilteredUrl();
                 triggerRealtimeFilter();
                 keywordInput.focus();
             });
@@ -853,11 +880,24 @@
                 setPanelVisibility(!isCurrentlyVisible);
             });
             syncKeywordActionButtons();
-            if (window.jQuery) {
-                window.jQuery(categorySelect).on('select2:select select2:clear select2:unselect', triggerRealtimeFilter);
-                window.jQuery(brandSelect).on('select2:select select2:clear select2:unselect', triggerRealtimeFilter);
-                window.jQuery(showcaseSelect).on('select2:select select2:clear select2:unselect', triggerRealtimeFilter);
-            }
+            syncExportFilteredUrl();
+            const bindSelect2RealtimeEvents = () => {
+                if (!window.jQuery) {
+                    return;
+                }
+                const bindFor = (element) => {
+                    const $el = window.jQuery(element);
+                    $el.off('.productsRealtime');
+                    $el.on('select2:select.productsRealtime select2:clear.productsRealtime select2:unselect.productsRealtime', handleSelectFilterChange);
+                };
+
+                bindFor(categorySelect);
+                bindFor(brandSelect);
+                bindFor(showcaseSelect);
+            };
+
+            bindSelect2RealtimeEvents();
+            window.addEventListener('load', bindSelect2RealtimeEvents);
             prevButton.addEventListener('click', () => loadProducts(currentPage - 1));
             nextButton.addEventListener('click', () => loadProducts(currentPage + 1));
             filterForm.addEventListener('submit', (event) => {

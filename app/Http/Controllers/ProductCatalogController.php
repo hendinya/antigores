@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ProductCatalogController extends Controller
@@ -72,10 +73,12 @@ class ProductCatalogController extends Controller
             ->when($categoryId, fn (Builder $query) => $query->where('category_id', $categoryId))
             ->when($brandId, fn (Builder $query) => $query->where('brand_id', $brandId))
             ->where('name', 'like', "%{$keyword}%")
+            ->selectRaw('MIN(name) as name, LOWER(TRIM(name)) as name_key')
+            ->groupBy(DB::raw('LOWER(TRIM(name))'))
             ->orderBy('name')
             ->limit(10)
             ->pluck('name')
-            ->unique()
+            ->unique(fn (string $name) => mb_strtolower(trim($name)))
             ->values();
 
         return response()->json(['items' => $items]);
