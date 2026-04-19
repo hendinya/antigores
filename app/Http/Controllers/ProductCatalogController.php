@@ -113,13 +113,24 @@ class ProductCatalogController extends Controller
         }
 
         return $user->memberShowcases()
-            ->pluck('showcase_number', 'brand_id');
+            ->with('brand:id,name,category_id')
+            ->get()
+            ->mapWithKeys(function ($memberShowcase) {
+                $brand = $memberShowcase->brand;
+                if (! $brand) {
+                    return [];
+                }
+                $key = $brand->category_id.'|'.mb_strtolower(trim((string) $brand->name));
+
+                return [$key => (string) $memberShowcase->showcase_number];
+            });
     }
 
     private function mapShowcaseForCollection(EloquentCollection $products, Collection $showcaseMap, bool $isAdmin): EloquentCollection
     {
         return $products->map(function (Product $product) use ($showcaseMap, $isAdmin) {
-            $mappedShowcase = trim((string) $showcaseMap->get($product->brand_id, ''));
+            $lookupKey = $product->category_id.'|'.mb_strtolower(trim((string) $product->brand->name));
+            $mappedShowcase = trim((string) $showcaseMap->get($lookupKey, ''));
             $fallback = $isAdmin ? $product->phoneType->name : 'Etalase belum di atur';
             $product->setAttribute('resolved_showcase', $mappedShowcase !== '' ? $mappedShowcase : $fallback);
 

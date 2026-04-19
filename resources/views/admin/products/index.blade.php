@@ -542,13 +542,29 @@
                 </thead>
                 <tbody id="adminProductsTableBody">
                 @forelse($products as $product)
+                    @php
+                        $variants = $product->master?->variants ?? collect([$product]);
+                        $showcaseNames = $variants->pluck('phoneType.name')->filter()->unique()->values();
+                        $categoryImages = $variants
+                            ->map(fn($variant) => ['name' => $variant->category->name ?? '-', 'url' => $variant->category?->image_path ? asset('storage/'.$variant->category->image_path) : null])
+                            ->unique(fn($item) => ($item['name'] ?? '').'|'.($item['url'] ?? ''))
+                            ->values();
+                    @endphp
                     <tr>
                         <td class="product-cell-select">
                             <input type="checkbox" class="bulk-product-checkbox" value="{{ $product->id }}" aria-label="Pilih produk {{ $product->name }}">
                         </td>
                         <td class="product-cell-image">
-                            @if($product->category->image_path)
-                                <img src="{{ asset('storage/'.$product->category->image_path) }}" alt="{{ $product->category->name }}" class="rounded" style="width: 42px; height: 42px; object-fit: cover;">
+                            @if($categoryImages->isNotEmpty())
+                                <div class="d-flex gap-1 flex-wrap">
+                                    @foreach($categoryImages as $categoryImage)
+                                        @if($categoryImage['url'])
+                                            <img src="{{ $categoryImage['url'] }}" alt="{{ $categoryImage['name'] }}" class="rounded" style="width: 32px; height: 32px; object-fit: cover;">
+                                        @else
+                                            <span class="badge text-bg-light">{{ $categoryImage['name'] }}</span>
+                                        @endif
+                                    @endforeach
+                                </div>
                             @else
                                 -
                             @endif
@@ -558,12 +574,12 @@
                             <div class="product-name-sub d-md-none">{{ $product->phoneType->camera_shape ?? '-' }} {{ $product->phoneType->antigores_size ?? '-' }}</div>
                             <div class="product-mobile-badges d-md-none">
                                 <span class="product-mobile-badge">{{ \Illuminate\Support\Str::limit($product->product_note, 40) ?: '-' }}</span>
-                                <span class="product-mobile-badge product-mobile-badge-outline">{{ $product->phoneType->name }}</span>
+                                <span class="product-mobile-badge product-mobile-badge-outline">{{ $showcaseNames->implode(', ') ?: '-' }}</span>
                             </div>
                         </td>
                         <td class="product-cell-camera">{{ $product->phoneType->camera_shape ?? '-' }}</td>
                         <td class="product-cell-size">{{ $product->phoneType->antigores_size ?? '-' }}</td>
-                        <td class="product-cell-showcase">{{ $product->phoneType->name }}</td>
+                        <td class="product-cell-showcase">{{ $showcaseNames->implode(', ') ?: '-' }}</td>
                         <td class="product-cell-brand">
                             <div class="d-flex align-items-center gap-2">
                                 @if($product->brand->image_path)
@@ -728,14 +744,18 @@
                             <input type="checkbox" class="bulk-product-checkbox" value="${item.id}" aria-label="Pilih produk ${item.name}">
                         </td>
                         <td class="product-cell-image">
-                            ${item.category_image ? `<img src="${item.category_image}" alt="${item.category}" class="rounded" style="width: 42px; height: 42px; object-fit: cover;">` : '-'}
+                            ${Array.isArray(item.category_images) && item.category_images.length
+                                ? `<div class="d-flex gap-1 flex-wrap">${item.category_images.map((image) => image.url
+                                    ? `<img src="${image.url}" alt="${image.name}" class="rounded" style="width: 32px; height: 32px; object-fit: cover;">`
+                                    : `<span class="badge text-bg-light">${image.name}</span>`).join('')}</div>`
+                                : '-'}
                         </td>
                         <td class="product-cell-name">
                             <div class="product-name-title">${item.name}</div>
                             <div class="product-name-sub d-md-none">${item.camera_shape ?? '-'} ${item.antigores_size ?? '-'}</div>
                             <div class="product-mobile-badges d-md-none">
                                 <span class="product-mobile-badge">${item.product_note ? item.product_note : '-'}</span>
-                                <span class="product-mobile-badge product-mobile-badge-outline">${item.showcase}</span>
+                                <span class="product-mobile-badge product-mobile-badge-outline">${item.showcase ? item.showcase : '-'}</span>
                             </div>
                         </td>
                         <td class="product-cell-camera">${item.camera_shape ?? '-'}</td>

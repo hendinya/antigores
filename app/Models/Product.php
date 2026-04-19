@@ -10,7 +10,7 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'category_id', 'brand_id', 'phone_type_id', 'product_note', 'is_visible_for_affiliator'];
+    protected $fillable = ['product_master_id', 'name', 'category_id', 'brand_id', 'phone_type_id', 'product_note', 'is_visible_for_affiliator'];
 
     protected $casts = [
         'is_visible_for_affiliator' => 'boolean',
@@ -24,6 +24,11 @@ class Product extends Model
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    public function master(): BelongsTo
+    {
+        return $this->belongsTo(ProductMaster::class, 'product_master_id');
     }
 
     public function phoneType(): BelongsTo

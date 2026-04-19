@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\PhoneType;
 use App\Models\Product;
+use App\Models\ProductMaster;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -46,22 +47,35 @@ class ProductController extends Controller
             ->paginate(10);
 
         return response()->json([
-            'items' => $products->getCollection()->map(fn (Product $product) => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'product_note' => e(Str::limit((string) $product->product_note, 80)),
-                'is_visible_for_affiliator' => $product->is_visible_for_affiliator,
-                'category' => $product->category->name,
-                'category_image' => $product->category->image_path ? asset('storage/'.$product->category->image_path) : null,
-                'brand' => $product->brand->name,
-                'brand_image' => $product->brand->image_path ? asset('storage/'.$product->brand->image_path) : null,
-                'showcase' => $product->phoneType->name,
-                'antigores_size' => $product->phoneType->antigores_size,
-                'camera_shape' => $product->phoneType->camera_shape,
-                'edit_url' => route('admin.products.edit', $product),
-                'delete_url' => route('admin.products.destroy', $product),
-                'visibility_url' => route('admin.products.visibility', $product),
-            ])->values(),
+            'items' => $products->getCollection()->map(function (Product $product): array {
+                $variants = $product->master?->variants?->values() ?? collect([$product]);
+                $showcases = $variants->pluck('phoneType.name')->filter()->unique()->values();
+                $cameraShapes = $variants->pluck('phoneType.camera_shape')->filter()->unique()->values();
+                $antigoresSizes = $variants->pluck('phoneType.antigores_size')->filter()->unique()->values();
+                $categoryImages = $variants
+                    ->map(fn (Product $variant) => [
+                        'name' => $variant->category->name ?? '-',
+                        'url' => $variant->category?->image_path ? asset('storage/'.$variant->category->image_path) : null,
+                    ])
+                    ->unique(fn (array $item) => ($item['name'] ?? '').'|'.($item['url'] ?? ''))
+                    ->values();
+
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'product_note' => e(Str::limit((string) $product->product_note, 80)),
+                    'is_visible_for_affiliator' => $product->is_visible_for_affiliator,
+                    'category_images' => $categoryImages,
+                    'brand' => $product->brand->name,
+                    'brand_image' => $product->brand->image_path ? asset('storage/'.$product->brand->image_path) : null,
+                    'showcase' => $showcases->implode(', '),
+                    'antigores_size' => $antigoresSizes->implode(', '),
+                    'camera_shape' => $cameraShapes->implode(', '),
+                    'edit_url' => route('admin.products.edit', $product),
+                    'delete_url' => route('admin.products.destroy', $product),
+                    'visibility_url' => route('admin.products.visibility', $product),
+                ];
+            })->values(),
             'pagination' => [
                 'current_page' => $products->currentPage(),
                 'last_page' => $products->lastPage(),
@@ -75,9 +89,23 @@ class ProductController extends Controller
     public function create(Request $request): View
     {
         $sourceProduct = null;
+        $sourceVariants = collect();
         $sourceProductId = $request->integer('source_product_id');
         if ($sourceProductId > 0) {
-            $sourceProduct = Product::query()->find($sourceProductId);
+            $sourceProduct = Product::query()
+                ->with(['master.variants:id,product_master_id,category_id,phone_type_id'])
+                ->find($sourceProductId);
+            if ($sourceProduct?->master) {
+                $sourceVariants = $sourceProduct->master->variants->map(fn (Product $variant) => [
+                    'category_id' => $variant->category_id,
+                    'phone_type_id' => $variant->phone_type_id,
+                ])->values();
+            } elseif ($sourceProduct) {
+                $sourceVariants = collect([[
+                    'category_id' => $sourceProduct->category_id,
+                    'phone_type_id' => $sourceProduct->phone_type_id,
+                ]]);
+            }
         }
 
         return view('admin.products.create', [
@@ -85,6 +113,7 @@ class ProductController extends Controller
             'brands' => Brand::query()->whereNull('category_id')->orderBy('name')->get(['id', 'name']),
             'phoneTypes' => PhoneType::query()->orderBy('name')->get(['id', 'name']),
             'sourceProduct' => $sourceProduct,
+            'sourceVariants' => $sourceVariants,
             'returnTo' => (string) $request->query('return_to', route('admin.products.index')),
         ]);
     }
@@ -92,36 +121,64 @@ class ProductController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('products', 'name')->where(
-                    fn ($query) => $query
-                        ->where('category_id', $request->integer('category_id'))
-                        ->where('brand_id', $request->integer('brand_id'))
-                ),
-            ],
-            'category_id' => ['required', 'exists:categories,id'],
+            'name' => ['required', 'string', 'max:255'],
             'brand_id' => ['required', Rule::exists('brands', 'id')->where(fn ($query) => $query->whereNull('category_id'))],
-            'phone_type_id' => ['required', 'exists:phone_types,id'],
+            'variants' => ['required', 'array', 'min:1'],
+            'variants.*.category_id' => ['required', 'exists:categories,id'],
+            'variants.*.phone_type_id' => ['required', 'exists:phone_types,id'],
             'product_note' => ['nullable', 'string', 'max:1000'],
             'is_visible_for_affiliator' => ['nullable', 'boolean'],
         ], [
-            'name.unique' => 'Nama produk dengan kategori dan brand ini sudah ada.',
             'brand_id.exists' => 'Brand harus berasal dari Master Brands.',
         ]);
-        $validated['is_visible_for_affiliator'] = (bool) ($validated['is_visible_for_affiliator'] ?? true);
+        $isVisible = (bool) ($validated['is_visible_for_affiliator'] ?? true);
+        $master = $this->resolveOrCreateMaster(
+            $validated['name'],
+            (int) $validated['brand_id'],
+            $validated['product_note'] ?? null,
+            $isVisible
+        );
 
-        Product::create($validated);
+        $created = 0;
+        foreach ($validated['variants'] as $variant) {
+            $exists = Product::query()
+                ->where('product_master_id', $master->id)
+                ->where('category_id', $variant['category_id'])
+                ->exists();
 
-        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan.');
+            if ($exists) {
+                continue;
+            }
+
+            Product::query()->create([
+                'product_master_id' => $master->id,
+                'name' => $validated['name'],
+                'category_id' => $variant['category_id'],
+                'brand_id' => $validated['brand_id'],
+                'phone_type_id' => $variant['phone_type_id'],
+                'product_note' => $validated['product_note'] ?? null,
+                'is_visible_for_affiliator' => $isVisible,
+            ]);
+            $created++;
+        }
+
+        if ($created === 0) {
+            return redirect()->route('admin.products.index')->with('error', 'Semua varian produk yang diinput sudah ada.');
+        }
+
+        return redirect()->route('admin.products.index')->with('success', "Produk berhasil ditambahkan ({$created} varian).");
     }
 
     public function edit(Product $product): View
     {
+        $master = $product->master;
+        $variants = $master?->variants()->with(['category:id,name', 'phoneType:id,name'])->orderBy('category_id')->get()
+            ?? collect([$product->load(['category:id,name', 'phoneType:id,name'])]);
+
         return view('admin.products.edit', [
             'product' => $product,
+            'master' => $master,
+            'variants' => $variants,
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'brands' => Brand::query()->whereNull('category_id')->orderBy('name')->get(['id', 'name']),
             'phoneTypes' => PhoneType::query()->orderBy('name')->get(['id', 'name']),
@@ -131,36 +188,81 @@ class ProductController extends Controller
     public function update(Request $request, Product $product): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('products', 'name')
-                    ->ignore($product->id)
-                    ->where(
-                        fn ($query) => $query
-                            ->where('category_id', $request->integer('category_id'))
-                            ->where('brand_id', $request->integer('brand_id'))
-                    ),
-            ],
-            'category_id' => ['required', 'exists:categories,id'],
+            'name' => ['required', 'string', 'max:255'],
             'brand_id' => ['required', Rule::exists('brands', 'id')->where(fn ($query) => $query->whereNull('category_id'))],
-            'phone_type_id' => ['required', 'exists:phone_types,id'],
+            'variants' => ['required', 'array', 'min:1'],
+            'variants.*.category_id' => ['required', 'exists:categories,id'],
+            'variants.*.phone_type_id' => ['required', 'exists:phone_types,id'],
             'product_note' => ['nullable', 'string', 'max:1000'],
             'is_visible_for_affiliator' => ['nullable', 'boolean'],
         ], [
-            'name.unique' => 'Nama produk dengan kategori dan brand ini sudah ada.',
             'brand_id.exists' => 'Brand harus berasal dari Master Brands.',
         ]);
-        $validated['is_visible_for_affiliator'] = (bool) ($validated['is_visible_for_affiliator'] ?? false);
+        $isVisible = (bool) ($validated['is_visible_for_affiliator'] ?? false);
 
-        $product->update($validated);
+        $master = $product->master ?? $this->resolveOrCreateMaster(
+            $product->name,
+            (int) $product->brand_id,
+            $product->product_note,
+            (bool) $product->is_visible_for_affiliator
+        );
+        $master->update([
+            'name' => $validated['name'],
+            'brand_id' => $validated['brand_id'],
+            'product_note' => $validated['product_note'] ?? null,
+            'is_visible_for_affiliator' => $isVisible,
+        ]);
+
+        $variantRows = collect($validated['variants'])
+            ->map(fn (array $row) => [
+                'category_id' => (int) $row['category_id'],
+                'phone_type_id' => (int) $row['phone_type_id'],
+            ]);
+        if ($variantRows->pluck('category_id')->count() !== $variantRows->pluck('category_id')->unique()->count()) {
+            return back()
+                ->withInput()
+                ->withErrors(['variants' => 'Kategori pada varian tidak boleh duplikat.']);
+        }
+
+        $existingVariants = $master->variants()->get()->keyBy('category_id');
+        $keptVariantIds = [];
+        foreach ($variantRows as $variantRow) {
+            $existing = $existingVariants->get($variantRow['category_id']);
+            if ($existing) {
+                $existing->update([
+                    'phone_type_id' => $variantRow['phone_type_id'],
+                ]);
+                $keptVariantIds[] = $existing->id;
+            } else {
+                $created = Product::query()->create([
+                    'product_master_id' => $master->id,
+                    'name' => $master->name,
+                    'category_id' => $variantRow['category_id'],
+                    'brand_id' => $master->brand_id,
+                    'phone_type_id' => $variantRow['phone_type_id'],
+                    'product_note' => $master->product_note,
+                    'is_visible_for_affiliator' => $master->is_visible_for_affiliator,
+                ]);
+                $keptVariantIds[] = $created->id;
+            }
+        }
+        $master->variants()->whereNotIn('id', $keptVariantIds)->delete();
+        $this->syncMasterToVariants($master);
 
         return $this->redirectToIndex($request)->with('success', 'Produk berhasil diperbarui.');
     }
 
     public function destroy(Request $request, Product $product): RedirectResponse
     {
+        $master = $product->master;
+        if ($master) {
+            $deletedVariants = $master->variants()->count();
+            $master->variants()->delete();
+            $master->delete();
+
+            return $this->redirectToIndex($request)->with('success', "Produk berhasil dihapus ({$deletedVariants} varian).");
+        }
+
         $product->delete();
 
         return $this->redirectToIndex($request)->with('success', 'Produk berhasil dihapus.');
@@ -173,9 +275,21 @@ class ProductController extends Controller
             'product_ids.*' => ['integer', 'exists:products,id'],
         ]);
 
-        $deleted = Product::query()->whereIn('id', $validated['product_ids'])->delete();
+        $masterIds = Product::query()
+            ->whereIn('id', $validated['product_ids'])
+            ->whereNotNull('product_master_id')
+            ->pluck('product_master_id')
+            ->unique()
+            ->values();
+        $deleted = 0;
+        if ($masterIds->isNotEmpty()) {
+            $deleted = Product::query()->whereIn('product_master_id', $masterIds)->delete();
+            ProductMaster::query()->whereIn('id', $masterIds)->delete();
+        } else {
+            $deleted = Product::query()->whereIn('id', $validated['product_ids'])->delete();
+        }
 
-        return $this->redirectToIndex($request)->with('success', "Berhasil menghapus {$deleted} produk.");
+        return $this->redirectToIndex($request)->with('success', "Berhasil menghapus {$deleted} varian produk.");
     }
 
     public function updateVisibility(Request $request, Product $product): RedirectResponse
@@ -185,7 +299,13 @@ class ProductController extends Controller
         ]);
 
         $isVisible = (bool) $validated['is_visible_for_affiliator'];
-        $product->update(['is_visible_for_affiliator' => $isVisible]);
+        $master = $product->master;
+        if ($master) {
+            $master->update(['is_visible_for_affiliator' => $isVisible]);
+            $this->syncMasterToVariants($master);
+        } else {
+            $product->update(['is_visible_for_affiliator' => $isVisible]);
+        }
 
         return $this->redirectToIndex($request)->with(
             'success',
@@ -203,11 +323,14 @@ class ProductController extends Controller
             'is_visible_for_affiliator' => ['required', 'boolean'],
         ]);
 
-        $affected = Product::query()
-            ->whereIn('id', $validated['product_ids'])
-            ->update(['is_visible_for_affiliator' => (bool) $validated['is_visible_for_affiliator']]);
-
         $isVisible = (bool) $validated['is_visible_for_affiliator'];
+        $selectedProducts = Product::query()->whereIn('id', $validated['product_ids'])->get(['id', 'product_master_id']);
+        $masterIds = $selectedProducts->pluck('product_master_id')->filter()->unique()->values();
+        if ($masterIds->isNotEmpty()) {
+            ProductMaster::query()->whereIn('id', $masterIds)->update(['is_visible_for_affiliator' => $isVisible]);
+            Product::query()->whereIn('product_master_id', $masterIds)->update(['is_visible_for_affiliator' => $isVisible]);
+        }
+        $affected = $selectedProducts->count();
 
         return $this->redirectToIndex($request)->with(
             'success',
@@ -249,10 +372,15 @@ class ProductController extends Controller
             DB::beginTransaction();
             try {
                 $rows->each(function (array $row) use (&$created, &$skipped) {
+                    $master = $this->resolveOrCreateMaster(
+                        $row['name'],
+                        (int) $row['brand_id'],
+                        $row['product_note'] ?? null,
+                        false
+                    );
                     $exists = Product::query()
-                        ->where('name', $row['name'])
+                        ->where('product_master_id', $master->id)
                         ->where('category_id', $row['category_id'])
-                        ->where('brand_id', $row['brand_id'])
                         ->exists();
                     if ($exists) {
                         $skipped++;
@@ -261,6 +389,7 @@ class ProductController extends Controller
                     }
 
                     Product::query()->create([
+                        'product_master_id' => $master->id,
                         'name' => $row['name'],
                         'category_id' => $row['category_id'],
                         'brand_id' => $row['brand_id'],
@@ -295,7 +424,28 @@ class ProductController extends Controller
         DB::beginTransaction();
         try {
             foreach ($result['to_insert'] as $row) {
-                Product::query()->create($row);
+                $master = $this->resolveOrCreateMaster(
+                    $row['name'],
+                    (int) $row['brand_id'],
+                    $row['product_note'] ?? null,
+                    false
+                );
+                $exists = Product::query()
+                    ->where('product_master_id', $master->id)
+                    ->where('category_id', $row['category_id'])
+                    ->exists();
+                if ($exists) {
+                    continue;
+                }
+                Product::query()->create([
+                    'product_master_id' => $master->id,
+                    'name' => $row['name'],
+                    'category_id' => $row['category_id'],
+                    'brand_id' => $row['brand_id'],
+                    'phone_type_id' => $row['phone_type_id'],
+                    'product_note' => $row['product_note'] ?? null,
+                    'is_visible_for_affiliator' => false,
+                ]);
             }
             DB::commit();
         } catch (\Throwable $throwable) {
@@ -313,12 +463,20 @@ class ProductController extends Controller
     public function template(): BinaryFileResponse
     {
         $path = storage_path('app/template-import-produk.xlsx');
+        $categories = Category::query()->orderBy('name')->pluck('name')->values();
         $writer = new Writer;
         $writer->openToFile($path);
-        $writer->addRow(Row::fromValues(['nama_produk', 'kategori', 'brand', 'etalase', 'catatan_produk']));
-        $writer->addRow(Row::fromValues(['Antigores iPhone 13', 'Kaca Bening', 'Apple', '12', 'Model notch kecil, cek sudut kiri atas']));
-        $writer->addRow(Row::fromValues(['Antigores Samsung A15', 'Kaca Privasi', 'Samsung', '34', 'Versi kamera 3 lensa']));
-        $writer->addRow(Row::fromValues(['Antigores Redmi Note 13', 'Kaca Bening', 'Xiaomi', '55', 'Pastikan ukuran sesuai varian 4G']));
+        $header = array_merge(['nama_produk', 'brand', 'catatan_produk'], $categories->all());
+        $writer->addRow(Row::fromValues($header));
+
+        $sampleRow = ['Antigores Samsung A15', 'Samsung', 'Contoh catatan produk'];
+        foreach ($categories as $categoryName) {
+            $normalized = Str::lower($categoryName);
+            $sampleRow[] = str_contains($normalized, 'privacy')
+                ? 'p-02'
+                : (str_contains($normalized, 'bening') ? 'ai-01' : '');
+        }
+        $writer->addRow(Row::fromValues($sampleRow));
         $writer->close();
 
         return response()->download(
@@ -331,21 +489,50 @@ class ProductController extends Controller
     public function exportFiltered(Request $request): BinaryFileResponse
     {
         $products = $this->filteredQuery($request)->get();
+        $categories = Category::query()->orderBy('name')->get(['id', 'name']);
         $filename = 'produk-filtered-'.now()->format('Ymd-His').'.xlsx';
         $path = storage_path("app/{$filename}");
 
         $writer = new Writer;
         $writer->openToFile($path);
-        $writer->addRow(Row::fromValues(['nama_produk', 'kategori', 'brand', 'etalase', 'catatan_produk']));
+        $header = array_merge(['nama_produk', 'brand', 'catatan_produk'], $categories->pluck('name')->all());
+        $writer->addRow(Row::fromValues($header));
 
+        $grouped = [];
         foreach ($products as $product) {
-            $writer->addRow(Row::fromValues([
-                $product->name,
-                $product->category->name,
-                $product->brand->name,
-                $product->phoneType->name,
-                (string) ($product->product_note ?? ''),
-            ]));
+            $sourceVariants = $product->master?->variants?->values() ?? collect([$product]);
+            $key = (string) ($product->product_master_id ?: $product->id);
+            if (! isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'name' => $product->master?->name ?? $product->name,
+                    'brand' => $product->brand->name,
+                    'product_note' => (string) ($product->master?->product_note ?? $product->product_note ?? ''),
+                    'category_showcases' => [],
+                ];
+            }
+
+            foreach ($sourceVariants as $variant) {
+                $showcaseName = $variant->phoneType->name ?? null;
+                if ($showcaseName === null) {
+                    continue;
+                }
+                $grouped[$key]['category_showcases'][$variant->category_id][] = $showcaseName;
+            }
+        }
+
+        foreach ($grouped as $rowData) {
+            $row = [
+                $rowData['name'],
+                $rowData['brand'],
+                $rowData['product_note'],
+            ];
+
+            foreach ($categories as $category) {
+                $showcases = array_values(array_unique($rowData['category_showcases'][$category->id] ?? []));
+                $row[] = implode(',', $showcases);
+            }
+
+            $writer->addRow(Row::fromValues($row));
         }
         $writer->close();
 
@@ -368,6 +555,7 @@ class ProductController extends Controller
         $validCount = 0;
         $duplicateCount = 0;
         $errorCount = 0;
+        $headerCategoryMap = [];
 
         try {
             foreach ($reader->getSheetIterator() as $sheet) {
@@ -375,45 +563,52 @@ class ProductController extends Controller
                     $line++;
                     $cells = $row->toArray();
                     if ($isHeader) {
+                        $headerValues = array_map(fn ($value) => trim((string) $value), $cells);
+                        if (count($headerValues) < 4) {
+                            throw new \RuntimeException('Format header import produk tidak valid.');
+                        }
+                        $headerCategoryMap = [];
+                        foreach (array_slice($headerValues, 3) as $index => $categoryHeader) {
+                            if ($categoryHeader === '') {
+                                continue;
+                            }
+                            $category = Category::query()->whereRaw('LOWER(name) = ?', [Str::lower($categoryHeader)])->first();
+                            if (! $category) {
+                                throw new \RuntimeException("Kategori '{$categoryHeader}' pada header tidak ditemukan.");
+                            }
+                            $headerCategoryMap[3 + $index] = $category;
+                        }
                         $isHeader = false;
 
                         continue;
                     }
 
                     $name = trim((string) ($cells[0] ?? ''));
-                    $categoryName = trim((string) ($cells[1] ?? ''));
-                    $brandName = trim((string) ($cells[2] ?? ''));
-                    $showcaseName = trim((string) ($cells[3] ?? ''));
-                    $productNote = trim((string) ($cells[4] ?? ''));
+                    $brandName = trim((string) ($cells[1] ?? ''));
+                    $productNote = trim((string) ($cells[2] ?? ''));
 
-                    if ($name === '' && $categoryName === '' && $brandName === '' && $showcaseName === '' && $productNote === '') {
-                        continue;
+                    $allVariantCells = '';
+                    foreach (array_keys($headerCategoryMap) as $columnIndex) {
+                        $allVariantCells .= trim((string) ($cells[$columnIndex] ?? ''));
                     }
 
-                    $rowPreview = [
-                        'line' => $line,
-                        'name' => $name,
-                        'category' => $categoryName,
-                        'brand' => $brandName,
-                        'showcase' => $showcaseName,
-                        'product_note' => $productNote,
-                        'status' => 'error',
-                        'message' => '',
-                    ];
-
-                    if ($name === '' || $categoryName === '' || $brandName === '' || $showcaseName === '') {
-                        $rowPreview['message'] = 'Semua kolom wajib diisi.';
-                        $previewRows[] = $rowPreview;
+                    if ($name === '' && $brandName === '' && $productNote === '' && $allVariantCells === '') {
+                        continue;
+                    }
+                    if ($name === '' || $brandName === '') {
+                        $previewRows[] = [
+                            'line' => $line,
+                            'name' => $name,
+                            'category' => '-',
+                            'brand' => $brandName,
+                            'showcase' => '-',
+                            'product_note' => $productNote,
+                            'status' => 'error',
+                            'message' => 'Kolom nama_produk dan brand wajib diisi.',
+                        ];
                         $errorCount++;
 
                         continue;
-                    }
-
-                    $category = Category::query()->whereRaw('LOWER(name) = ?', [Str::lower($categoryName)])->first();
-                    $notes = [];
-                    if (! $category) {
-                        $category = Category::query()->create(['name' => $categoryName]);
-                        $notes[] = "Kategori '{$categoryName}' dibuat otomatis";
                     }
 
                     $brand = Brand::query()
@@ -421,48 +616,138 @@ class ProductController extends Controller
                         ->whereRaw('LOWER(name) = ?', [Str::lower($brandName)])
                         ->first();
                     if (! $brand) {
-                        $brand = Brand::query()->create([
-                            'name' => $brandName,
-                            'category_id' => null,
-                        ]);
-                        $notes[] = "Master brand '{$brandName}' dibuat otomatis";
-                    }
-
-                    $phoneType = PhoneType::query()->whereRaw('LOWER(name) = ?', [Str::lower($showcaseName)])->first();
-                    if (! $phoneType) {
-                        $phoneType = PhoneType::query()->create(['name' => $showcaseName]);
-                        $notes[] = "Etalase '{$showcaseName}' dibuat otomatis";
-                    }
-
-                    $exists = Product::query()
-                        ->where('name', $name)
-                        ->where('category_id', $category->id)
-                        ->where('brand_id', $brand->id)
-                        ->exists();
-                    if ($exists) {
-                        $rowPreview['status'] = 'duplicate';
-                        $rowPreview['message'] = 'Duplikat: nama produk dengan kategori dan brand ini sudah ada.';
-                        $previewRows[] = $rowPreview;
-                        $duplicateCount++;
+                        $previewRows[] = [
+                            'line' => $line,
+                            'name' => $name,
+                            'category' => '-',
+                            'brand' => $brandName,
+                            'showcase' => '-',
+                            'product_note' => $productNote,
+                            'status' => 'error',
+                            'message' => "Master brand '{$brandName}' tidak ditemukan.",
+                        ];
+                        $errorCount++;
 
                         continue;
                     }
 
-                    $rowPreview['status'] = 'valid';
-                    $rowPreview['message'] = $notes === [] ? 'Siap diimport.' : 'Siap diimport. '.implode('. ', $notes).'.';
-                    $previewRows[] = $rowPreview;
-                    $toInsert[] = [
-                        'name' => $name,
-                        'category_id' => $category->id,
-                        'brand_id' => $brand->id,
-                        'phone_type_id' => $phoneType->id,
-                        'product_note' => $productNote !== '' ? $productNote : null,
-                        'is_visible_for_affiliator' => false,
-                    ];
-                    $validCount++;
+                    $rowHasVariant = false;
+                    foreach ($headerCategoryMap as $columnIndex => $category) {
+                        $showcaseCell = trim((string) ($cells[$columnIndex] ?? ''));
+                        if ($showcaseCell === '') {
+                            continue;
+                        }
+                        $rowHasVariant = true;
+
+                        if (str_contains($showcaseCell, ',')) {
+                            $previewRows[] = [
+                                'line' => $line,
+                                'name' => $name,
+                                'category' => $category->name,
+                                'brand' => $brandName,
+                                'showcase' => $showcaseCell,
+                                'product_note' => $productNote,
+                                'status' => 'error',
+                                'message' => 'Satu kolom kategori hanya boleh berisi satu etalase.',
+                            ];
+                            $errorCount++;
+
+                            continue;
+                        }
+
+                        $showcaseName = $showcaseCell;
+                        $phoneType = PhoneType::query()->whereRaw('LOWER(name) = ?', [Str::lower($showcaseName)])->first();
+                        if (! $phoneType) {
+                            $previewRows[] = [
+                                'line' => $line,
+                                'name' => $name,
+                                'category' => $category->name,
+                                'brand' => $brandName,
+                                'showcase' => $showcaseName,
+                                'product_note' => $productNote,
+                                'status' => 'error',
+                                'message' => "Etalase '{$showcaseName}' tidak ditemukan.",
+                            ];
+                            $errorCount++;
+
+                            continue;
+                        }
+
+                        $exists = Product::query()
+                            ->where('name', $name)
+                            ->where('category_id', $category->id)
+                            ->where('brand_id', $brand->id)
+                            ->exists();
+                        if ($exists) {
+                            $previewRows[] = [
+                                'line' => $line,
+                                'name' => $name,
+                                'category' => $category->name,
+                                'brand' => $brandName,
+                                'showcase' => $showcaseName,
+                                'product_note' => $productNote,
+                                'status' => 'duplicate',
+                                'message' => 'Duplikat: kombinasi produk, kategori, dan brand sudah ada.',
+                            ];
+                            $duplicateCount++;
+
+                            continue;
+                        }
+
+                        $previewRows[] = [
+                            'line' => $line,
+                            'name' => $name,
+                            'category' => $category->name,
+                            'brand' => $brandName,
+                            'showcase' => $showcaseName,
+                            'product_note' => $productNote,
+                            'status' => 'valid',
+                            'message' => 'Siap diimport.',
+                        ];
+                        $toInsert[] = [
+                            'name' => $name,
+                            'category_id' => $category->id,
+                            'brand_id' => $brand->id,
+                            'phone_type_id' => $phoneType->id,
+                            'product_note' => $productNote !== '' ? $productNote : null,
+                            'is_visible_for_affiliator' => false,
+                        ];
+                        $validCount++;
+                    }
+
+                    if (! $rowHasVariant) {
+                        $previewRows[] = [
+                            'line' => $line,
+                            'name' => $name,
+                            'category' => '-',
+                            'brand' => $brandName,
+                            'showcase' => '-',
+                            'product_note' => $productNote,
+                            'status' => 'error',
+                            'message' => 'Isi minimal satu kolom kategori dengan nama etalase.',
+                        ];
+                        $errorCount++;
+                    }
                 }
                 break;
             }
+        } catch (\RuntimeException $exception) {
+            return [
+                'to_insert' => [],
+                'preview_rows' => [[
+                    'line' => 1,
+                    'name' => '-',
+                    'category' => '-',
+                    'brand' => '-',
+                    'showcase' => '-',
+                    'product_note' => '-',
+                    'status' => 'error',
+                    'message' => $exception->getMessage(),
+                ]],
+                'valid_count' => 0,
+                'duplicate_count' => 0,
+                'error_count' => 1,
+            ];
         } finally {
             $reader->close();
         }
@@ -483,8 +768,8 @@ class ProductController extends Controller
         $brandId = $request->integer('brand_id');
         $phoneTypeId = $request->integer('phone_type_id');
 
-        return Product::query()
-            ->with(['category:id,name,image_path', 'brand:id,name,image_path', 'phoneType:id,name,antigores_size,camera_shape'])
+        $baseQuery = Product::query()
+            ->with(['category:id,name,image_path', 'brand:id,name,image_path', 'phoneType:id,name,antigores_size,camera_shape', 'master:id,name,brand_id,product_note,is_visible_for_affiliator'])
             ->when($keyword !== '', fn ($query) => $query->where(function ($searchQuery) use ($keyword) {
                 $searchQuery
                     ->where('name', 'like', "%{$keyword}%")
@@ -493,7 +778,62 @@ class ProductController extends Controller
             }))
             ->when($categoryId, fn ($query) => $query->where('category_id', $categoryId))
             ->when($brandId, fn ($query) => $query->where('brand_id', $brandId))
-            ->when($phoneTypeId, fn ($query) => $query->where('phone_type_id', $phoneTypeId))
+            ->when($phoneTypeId, fn ($query) => $query->where('phone_type_id', $phoneTypeId));
+
+        $representativeIds = (clone $baseQuery)
+            ->selectRaw('MAX(id) as id')
+            ->groupBy(DB::raw('COALESCE(product_master_id, id)'));
+
+        return Product::query()
+            ->with([
+                'category:id,name,image_path',
+                'brand:id,name,image_path',
+                'phoneType:id,name,antigores_size,camera_shape',
+                'master:id,name,brand_id,product_note,is_visible_for_affiliator',
+                'master.variants:id,product_master_id,category_id,phone_type_id',
+                'master.variants.category:id,name,image_path',
+                'master.variants.phoneType:id,name,antigores_size,camera_shape',
+            ])
+            ->whereIn('id', $representativeIds)
             ->orderByDesc('id');
+    }
+
+    private function resolveOrCreateMaster(string $name, int $brandId, ?string $productNote, bool $isVisible): ProductMaster
+    {
+        $normalizedName = trim($name);
+        $normalizedNote = trim((string) $productNote);
+
+        $master = ProductMaster::query()
+            ->where('brand_id', $brandId)
+            ->whereRaw('LOWER(name) = ?', [Str::lower($normalizedName)])
+            ->whereRaw('LOWER(COALESCE(product_note, "")) = ?', [Str::lower($normalizedNote)])
+            ->first();
+
+        if (! $master) {
+            return ProductMaster::query()->create([
+                'name' => $normalizedName,
+                'brand_id' => $brandId,
+                'product_note' => $normalizedNote !== '' ? $normalizedNote : null,
+                'is_visible_for_affiliator' => $isVisible,
+            ]);
+        }
+
+        if ($isVisible && ! $master->is_visible_for_affiliator) {
+            $master->update(['is_visible_for_affiliator' => true]);
+        }
+
+        return $master;
+    }
+
+    private function syncMasterToVariants(ProductMaster $master): void
+    {
+        Product::query()
+            ->where('product_master_id', $master->id)
+            ->update([
+                'name' => $master->name,
+                'brand_id' => $master->brand_id,
+                'product_note' => $master->product_note,
+                'is_visible_for_affiliator' => $master->is_visible_for_affiliator,
+            ]);
     }
 }
