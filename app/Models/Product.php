@@ -10,7 +10,7 @@ class Product extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['product_master_id', 'name', 'category_id', 'brand_id', 'phone_type_id', 'product_note', 'is_visible_for_affiliator'];
+    protected $fillable = ['product_master_id', 'name', 'category_id', 'brand_id', 'phone_type_id', 'product_note', 'is_visible_for_affiliator', 'precision_status'];
 
     protected $casts = [
         'is_visible_for_affiliator' => 'boolean',

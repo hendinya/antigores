@@ -211,7 +211,8 @@
             #adminProductsTableBody .product-cell-size,
             #adminProductsTableBody .product-cell-showcase,
             #adminProductsTableBody .product-cell-brand,
-            #adminProductsTableBody .product-cell-note {
+            #adminProductsTableBody .product-cell-note,
+            #adminProductsTableBody .product-cell-status {
                 display: none;
             }
             #adminProductsTableBody .product-cell-select {
@@ -393,7 +394,7 @@
             </div>
             <div id="adminProductsAdvancedPanel" class="mt-2 d-none">
                 <div class="row g-2 align-items-end">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Kategori</label>
                         <select id="filter_category_id" name="category_id" class="form-select">
                             <option value="">Semua kategori</option>
@@ -402,7 +403,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Brand</label>
                         <select id="filter_brand_id" name="brand_id" class="form-select">
                             <option value="">Semua brand</option>
@@ -411,12 +412,21 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Etalase</label>
                         <select name="phone_type_id" class="form-select">
                             <option value="">Semua etalase</option>
                             @foreach($phoneTypes as $phoneType)
                                 <option value="{{ $phoneType->id }}" @selected((string) request('phone_type_id') === (string) $phoneType->id)>{{ $phoneType->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Status Presisi</label>
+                        <select name="precision_status" class="form-select">
+                            <option value="">Semua status</option>
+                            @foreach($precisionStatuses as $statusValue => $statusLabel)
+                                <option value="{{ $statusValue }}" @selected((string) request('precision_status') === (string) $statusValue)>{{ $statusLabel }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -470,6 +480,7 @@
                         <th>Brand</th>
                         <th>Etalase</th>
                         <th>Catatan Produk</th>
+                        <th>Status Presisi</th>
                         <th>Status</th>
                         <th>Pesan</th>
                     </tr>
@@ -483,6 +494,7 @@
                             <td>{{ $row['brand'] }}</td>
                             <td>{{ $row['showcase'] }}</td>
                             <td>{{ $row['product_note'] !== '' ? $row['product_note'] : '-' }}</td>
+                            <td>{{ $row['precision_status'] ?? '-' }}</td>
                             <td>
                                 @if($row['status'] === 'valid')
                                     <span class="badge text-bg-success">valid</span>
@@ -536,6 +548,7 @@
                     <th>Etalase</th>
                     <th>Brand</th>
                     <th>Catatan Produk</th>
+                    <th>Status Presisi</th>
                     <th class="text-center">Tampilkan untuk Affiliator</th>
                     <th class="text-end">Aksi</th>
                 </tr>
@@ -575,6 +588,7 @@
                             <div class="product-mobile-badges d-md-none">
                                 <span class="product-mobile-badge">{{ \Illuminate\Support\Str::limit($product->product_note, 40) ?: '-' }}</span>
                                 <span class="product-mobile-badge product-mobile-badge-outline">{{ $showcaseNames->implode(', ') ?: '-' }}</span>
+                                <span class="product-mobile-badge product-mobile-badge-outline">{{ \App\Models\ProductMaster::precisionStatusLabel($product->master?->precision_status ?? $product->precision_status) }}</span>
                             </div>
                         </td>
                         <td class="product-cell-camera">{{ $product->phoneType->camera_shape ?? '-' }}</td>
@@ -589,6 +603,7 @@
                             </div>
                         </td>
                         <td class="product-cell-note">{{ \Illuminate\Support\Str::limit($product->product_note, 80) ?: '-' }}</td>
+                        <td class="product-cell-status">{{ \App\Models\ProductMaster::precisionStatusLabel($product->master?->precision_status ?? $product->precision_status) }}</td>
                         <td class="affiliator-visibility-cell product-cell-visibility">
                             <form method="POST" action="{{ route('admin.products.visibility', $product) }}" class="d-inline" data-confirm-visibility>
                                 @csrf
@@ -629,7 +644,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="10" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>
+                    <tr><td colspan="11" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -650,6 +665,7 @@
             const categorySelect = document.getElementById('filter_category_id');
             const brandSelect = document.getElementById('filter_brand_id');
             const showcaseSelect = filterForm.querySelector('select[name="phone_type_id"]');
+            const precisionStatusSelect = filterForm.querySelector('select[name="precision_status"]');
             const clearKeywordButton = document.getElementById('adminProductsClearKeywordBtn');
             const togglePanelButton = document.getElementById('adminProductsTogglePanelBtn');
             const exportFilteredButton = document.getElementById('adminExportFilteredBtn');
@@ -733,7 +749,7 @@
 
             const renderRows = (items) => {
                 if (!items.length) {
-                    tableBody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>';
                     updateBulkSelectionState();
                     return;
                 }
@@ -756,6 +772,7 @@
                             <div class="product-mobile-badges d-md-none">
                                 <span class="product-mobile-badge">${item.product_note ? item.product_note : '-'}</span>
                                 <span class="product-mobile-badge product-mobile-badge-outline">${item.showcase ? item.showcase : '-'}</span>
+                                <span class="product-mobile-badge product-mobile-badge-outline">${item.precision_status_label ? item.precision_status_label : '-'}</span>
                             </div>
                         </td>
                         <td class="product-cell-camera">${item.camera_shape ?? '-'}</td>
@@ -768,6 +785,7 @@
                             </div>
                         </td>
                         <td class="product-cell-note">${item.product_note ? item.product_note : '-'}</td>
+                        <td class="product-cell-status">${item.precision_status_label ? item.precision_status_label : '-'}</td>
                         <td class="affiliator-visibility-cell product-cell-visibility">
                             <form method="POST" action="${item.visibility_url}" class="d-inline" data-confirm-visibility>
                                 <input type="hidden" name="_token" value="${csrfToken}">
@@ -826,6 +844,7 @@
                     category_id: categorySelect.value,
                     brand_id: brandSelect.value,
                     phone_type_id: showcaseSelect.value,
+                    precision_status: precisionStatusSelect ? precisionStatusSelect.value : '',
                 });
 
                 if (page !== null) {
@@ -872,7 +891,7 @@
                 importPanel.classList.toggle('d-none', !isVisible);
             };
 
-            const hasActiveAdvancedFilter = !!(categorySelect.value || brandSelect.value || showcaseSelect.value);
+            const hasActiveAdvancedFilter = !!(categorySelect.value || brandSelect.value || showcaseSelect.value || (precisionStatusSelect && precisionStatusSelect.value));
             setPanelVisibility(hasActiveAdvancedFilter);
 
             const handleSelectFilterChange = () => {
@@ -883,6 +902,9 @@
             categorySelect.addEventListener('change', handleSelectFilterChange);
             brandSelect.addEventListener('change', handleSelectFilterChange);
             showcaseSelect.addEventListener('change', handleSelectFilterChange);
+            if (precisionStatusSelect) {
+                precisionStatusSelect.addEventListener('change', handleSelectFilterChange);
+            }
             keywordInput.addEventListener('input', () => {
                 syncKeywordActionButtons();
                 syncExportFilteredUrl();
@@ -914,6 +936,9 @@
                 bindFor(categorySelect);
                 bindFor(brandSelect);
                 bindFor(showcaseSelect);
+                if (precisionStatusSelect) {
+                    bindFor(precisionStatusSelect);
+                }
             };
 
             bindSelect2RealtimeEvents();

@@ -26,6 +26,14 @@
                     </select>
                 </div>
                 <div>
+                    <label class="form-label">Status Presisi</label>
+                    <select name="precision_status" class="form-select" required>
+                        @foreach($precisionStatuses as $statusValue => $statusLabel)
+                            <option value="{{ $statusValue }}" @selected(old('precision_status', $sourceProduct?->master?->precision_status ?? $sourceProduct?->precision_status ?? \App\Models\ProductMaster::PRECISION_STATUS_BELUM_DITES) === $statusValue)>{{ $statusLabel }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label class="form-label mb-0">Varian Kategori + Etalase</label>
                         <button type="button" class="btn btn-outline-dark btn-sm" id="addVariantRowBtn">Tambah Varian</button>

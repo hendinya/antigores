@@ -37,6 +37,7 @@ class ProductController extends Controller
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'brands' => Brand::query()->whereNull('category_id')->orderBy('name')->get(['id', 'name']),
             'phoneTypes' => PhoneType::query()->orderBy('name')->get(['id', 'name']),
+            'precisionStatuses' => ProductMaster::precisionStatusOptions(),
             'importPreview' => Session::get(self::IMPORT_PREVIEW_SESSION_KEY),
         ]);
     }
@@ -64,6 +65,8 @@ class ProductController extends Controller
                     'id' => $product->id,
                     'name' => $product->name,
                     'product_note' => e(Str::limit((string) $product->product_note, 80)),
+                    'precision_status' => $this->resolvePrecisionStatus($product),
+                    'precision_status_label' => ProductMaster::precisionStatusLabel($this->resolvePrecisionStatus($product)),
                     'is_visible_for_affiliator' => $product->is_visible_for_affiliator,
                     'category_images' => $categoryImages,
                     'brand' => $product->brand->name,
@@ -112,6 +115,7 @@ class ProductController extends Controller
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'brands' => Brand::query()->whereNull('category_id')->orderBy('name')->get(['id', 'name']),
             'phoneTypes' => PhoneType::query()->orderBy('name')->get(['id', 'name']),
+            'precisionStatuses' => ProductMaster::precisionStatusOptions(),
             'sourceProduct' => $sourceProduct,
             'sourceVariants' => $sourceVariants,
             'returnTo' => (string) $request->query('return_to', route('admin.products.index')),
@@ -128,15 +132,18 @@ class ProductController extends Controller
             'variants.*.phone_type_id' => ['required', 'exists:phone_types,id'],
             'product_note' => ['nullable', 'string', 'max:1000'],
             'is_visible_for_affiliator' => ['nullable', 'boolean'],
+            'precision_status' => ['required', Rule::in(array_keys(ProductMaster::precisionStatusOptions()))],
         ], [
             'brand_id.exists' => 'Brand harus berasal dari Master Brands.',
         ]);
         $isVisible = (bool) ($validated['is_visible_for_affiliator'] ?? true);
+        $precisionStatus = ProductMaster::normalizePrecisionStatus($validated['precision_status']);
         $master = $this->resolveOrCreateMaster(
             $validated['name'],
             (int) $validated['brand_id'],
             $validated['product_note'] ?? null,
-            $isVisible
+            $isVisible,
+            $precisionStatus
         );
 
         $created = 0;
@@ -158,6 +165,7 @@ class ProductController extends Controller
                 'phone_type_id' => $variant['phone_type_id'],
                 'product_note' => $validated['product_note'] ?? null,
                 'is_visible_for_affiliator' => $isVisible,
+                'precision_status' => $precisionStatus,
             ]);
             $created++;
         }
@@ -182,6 +190,7 @@ class ProductController extends Controller
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'brands' => Brand::query()->whereNull('category_id')->orderBy('name')->get(['id', 'name']),
             'phoneTypes' => PhoneType::query()->orderBy('name')->get(['id', 'name']),
+            'precisionStatuses' => ProductMaster::precisionStatusOptions(),
         ]);
     }
 
@@ -195,22 +204,26 @@ class ProductController extends Controller
             'variants.*.phone_type_id' => ['required', 'exists:phone_types,id'],
             'product_note' => ['nullable', 'string', 'max:1000'],
             'is_visible_for_affiliator' => ['nullable', 'boolean'],
+            'precision_status' => ['required', Rule::in(array_keys(ProductMaster::precisionStatusOptions()))],
         ], [
             'brand_id.exists' => 'Brand harus berasal dari Master Brands.',
         ]);
         $isVisible = (bool) ($validated['is_visible_for_affiliator'] ?? false);
+        $precisionStatus = ProductMaster::normalizePrecisionStatus($validated['precision_status']);
 
         $master = $product->master ?? $this->resolveOrCreateMaster(
             $product->name,
             (int) $product->brand_id,
             $product->product_note,
-            (bool) $product->is_visible_for_affiliator
+            (bool) $product->is_visible_for_affiliator,
+            $this->resolvePrecisionStatus($product)
         );
         $master->update([
             'name' => $validated['name'],
             'brand_id' => $validated['brand_id'],
             'product_note' => $validated['product_note'] ?? null,
             'is_visible_for_affiliator' => $isVisible,
+            'precision_status' => $precisionStatus,
         ]);
 
         $variantRows = collect($validated['variants'])
@@ -242,6 +255,7 @@ class ProductController extends Controller
                     'phone_type_id' => $variantRow['phone_type_id'],
                     'product_note' => $master->product_note,
                     'is_visible_for_affiliator' => $master->is_visible_for_affiliator,
+                    'precision_status' => $master->precision_status,
                 ]);
                 $keptVariantIds[] = $created->id;
             }
@@ -376,7 +390,8 @@ class ProductController extends Controller
                         $row['name'],
                         (int) $row['brand_id'],
                         $row['product_note'] ?? null,
-                        false
+                        false,
+                        ProductMaster::normalizePrecisionStatus($row['precision_status'] ?? null)
                     );
                     $exists = Product::query()
                         ->where('product_master_id', $master->id)
@@ -396,6 +411,7 @@ class ProductController extends Controller
                         'phone_type_id' => $row['phone_type_id'],
                         'product_note' => $row['product_note'] ?? null,
                         'is_visible_for_affiliator' => false,
+                        'precision_status' => ProductMaster::normalizePrecisionStatus($row['precision_status'] ?? null),
                     ]);
                     $created++;
                 });
@@ -428,7 +444,8 @@ class ProductController extends Controller
                     $row['name'],
                     (int) $row['brand_id'],
                     $row['product_note'] ?? null,
-                    false
+                    false,
+                    ProductMaster::normalizePrecisionStatus($row['precision_status'] ?? null)
                 );
                 $exists = Product::query()
                     ->where('product_master_id', $master->id)
@@ -445,6 +462,7 @@ class ProductController extends Controller
                     'phone_type_id' => $row['phone_type_id'],
                     'product_note' => $row['product_note'] ?? null,
                     'is_visible_for_affiliator' => false,
+                    'precision_status' => ProductMaster::normalizePrecisionStatus($row['precision_status'] ?? null),
                 ]);
             }
             DB::commit();
@@ -466,10 +484,10 @@ class ProductController extends Controller
         $categories = Category::query()->orderBy('name')->pluck('name')->values();
         $writer = new Writer;
         $writer->openToFile($path);
-        $header = array_merge(['nama_produk', 'brand', 'catatan_produk'], $categories->all());
+        $header = array_merge(['nama_produk', 'brand', 'catatan_produk', 'status_presisi'], $categories->all());
         $writer->addRow(Row::fromValues($header));
 
-        $sampleRow = ['Antigores Samsung A15', 'Samsung', 'Contoh catatan produk'];
+        $sampleRow = ['Antigores Samsung A15', 'Samsung', 'Contoh catatan produk', 'Belum di tes'];
         foreach ($categories as $categoryName) {
             $normalized = Str::lower($categoryName);
             $sampleRow[] = str_contains($normalized, 'privacy')
@@ -495,7 +513,7 @@ class ProductController extends Controller
 
         $writer = new Writer;
         $writer->openToFile($path);
-        $header = array_merge(['nama_produk', 'brand', 'catatan_produk'], $categories->pluck('name')->all());
+        $header = array_merge(['nama_produk', 'brand', 'catatan_produk', 'status_presisi'], $categories->pluck('name')->all());
         $writer->addRow(Row::fromValues($header));
 
         $grouped = [];
@@ -507,6 +525,7 @@ class ProductController extends Controller
                     'name' => $product->master?->name ?? $product->name,
                     'brand' => $product->brand->name,
                     'product_note' => (string) ($product->master?->product_note ?? $product->product_note ?? ''),
+                    'precision_status' => $this->resolvePrecisionStatus($product),
                     'category_showcases' => [],
                 ];
             }
@@ -525,6 +544,7 @@ class ProductController extends Controller
                 $rowData['name'],
                 $rowData['brand'],
                 $rowData['product_note'],
+                ProductMaster::precisionStatusLabel($rowData['precision_status']),
             ];
 
             foreach ($categories as $category) {
@@ -556,6 +576,8 @@ class ProductController extends Controller
         $duplicateCount = 0;
         $errorCount = 0;
         $headerCategoryMap = [];
+        $hasPrecisionStatusColumn = false;
+        $categoryStartIndex = 3;
 
         try {
             foreach ($reader->getSheetIterator() as $sheet) {
@@ -567,8 +589,15 @@ class ProductController extends Controller
                         if (count($headerValues) < 4) {
                             throw new \RuntimeException('Format header import produk tidak valid.');
                         }
+                        $statusHeader = Str::lower($headerValues[3] ?? '');
+                        $hasPrecisionStatusColumn = in_array($statusHeader, [
+                            'status_presisi',
+                            'status presisi',
+                            'status',
+                        ], true);
+                        $categoryStartIndex = $hasPrecisionStatusColumn ? 4 : 3;
                         $headerCategoryMap = [];
-                        foreach (array_slice($headerValues, 3) as $index => $categoryHeader) {
+                        foreach (array_slice($headerValues, $categoryStartIndex) as $index => $categoryHeader) {
                             if ($categoryHeader === '') {
                                 continue;
                             }
@@ -576,7 +605,7 @@ class ProductController extends Controller
                             if (! $category) {
                                 throw new \RuntimeException("Kategori '{$categoryHeader}' pada header tidak ditemukan.");
                             }
-                            $headerCategoryMap[3 + $index] = $category;
+                            $headerCategoryMap[$categoryStartIndex + $index] = $category;
                         }
                         $isHeader = false;
 
@@ -586,6 +615,11 @@ class ProductController extends Controller
                     $name = trim((string) ($cells[0] ?? ''));
                     $brandName = trim((string) ($cells[1] ?? ''));
                     $productNote = trim((string) ($cells[2] ?? ''));
+                    $precisionStatus = ProductMaster::normalizePrecisionStatus(
+                        $hasPrecisionStatusColumn
+                            ? (string) ($cells[3] ?? '')
+                            : ProductMaster::PRECISION_STATUS_BELUM_DITES
+                    );
 
                     $allVariantCells = '';
                     foreach (array_keys($headerCategoryMap) as $columnIndex) {
@@ -603,6 +637,7 @@ class ProductController extends Controller
                             'brand' => $brandName,
                             'showcase' => '-',
                             'product_note' => $productNote,
+                            'precision_status' => ProductMaster::precisionStatusLabel($precisionStatus),
                             'status' => 'error',
                             'message' => 'Kolom nama_produk dan brand wajib diisi.',
                         ];
@@ -623,6 +658,7 @@ class ProductController extends Controller
                             'brand' => $brandName,
                             'showcase' => '-',
                             'product_note' => $productNote,
+                            'precision_status' => ProductMaster::precisionStatusLabel($precisionStatus),
                             'status' => 'error',
                             'message' => "Master brand '{$brandName}' tidak ditemukan.",
                         ];
@@ -647,6 +683,7 @@ class ProductController extends Controller
                                 'brand' => $brandName,
                                 'showcase' => $showcaseCell,
                                 'product_note' => $productNote,
+                                'precision_status' => ProductMaster::precisionStatusLabel($precisionStatus),
                                 'status' => 'error',
                                 'message' => 'Satu kolom kategori hanya boleh berisi satu etalase.',
                             ];
@@ -665,6 +702,7 @@ class ProductController extends Controller
                                 'brand' => $brandName,
                                 'showcase' => $showcaseName,
                                 'product_note' => $productNote,
+                                'precision_status' => ProductMaster::precisionStatusLabel($precisionStatus),
                                 'status' => 'error',
                                 'message' => "Etalase '{$showcaseName}' tidak ditemukan.",
                             ];
@@ -686,6 +724,7 @@ class ProductController extends Controller
                                 'brand' => $brandName,
                                 'showcase' => $showcaseName,
                                 'product_note' => $productNote,
+                                'precision_status' => ProductMaster::precisionStatusLabel($precisionStatus),
                                 'status' => 'duplicate',
                                 'message' => 'Duplikat: kombinasi produk, kategori, dan brand sudah ada.',
                             ];
@@ -701,6 +740,7 @@ class ProductController extends Controller
                             'brand' => $brandName,
                             'showcase' => $showcaseName,
                             'product_note' => $productNote,
+                            'precision_status' => ProductMaster::precisionStatusLabel($precisionStatus),
                             'status' => 'valid',
                             'message' => 'Siap diimport.',
                         ];
@@ -711,6 +751,7 @@ class ProductController extends Controller
                             'phone_type_id' => $phoneType->id,
                             'product_note' => $productNote !== '' ? $productNote : null,
                             'is_visible_for_affiliator' => false,
+                            'precision_status' => $precisionStatus,
                         ];
                         $validCount++;
                     }
@@ -723,6 +764,7 @@ class ProductController extends Controller
                             'brand' => $brandName,
                             'showcase' => '-',
                             'product_note' => $productNote,
+                            'precision_status' => ProductMaster::precisionStatusLabel($precisionStatus),
                             'status' => 'error',
                             'message' => 'Isi minimal satu kolom kategori dengan nama etalase.',
                         ];
@@ -741,6 +783,7 @@ class ProductController extends Controller
                     'brand' => '-',
                     'showcase' => '-',
                     'product_note' => '-',
+                    'precision_status' => '-',
                     'status' => 'error',
                     'message' => $exception->getMessage(),
                 ]],
@@ -767,9 +810,11 @@ class ProductController extends Controller
         $categoryId = $request->integer('category_id');
         $brandId = $request->integer('brand_id');
         $phoneTypeId = $request->integer('phone_type_id');
+        $precisionStatus = ProductMaster::normalizePrecisionStatus((string) $request->string('precision_status'));
+        $hasPrecisionStatusFilter = $request->filled('precision_status');
 
         $baseQuery = Product::query()
-            ->with(['category:id,name,image_path', 'brand:id,name,image_path', 'phoneType:id,name,antigores_size,camera_shape', 'master:id,name,brand_id,product_note,is_visible_for_affiliator'])
+            ->with(['category:id,name,image_path', 'brand:id,name,image_path', 'phoneType:id,name,antigores_size,camera_shape', 'master:id,name,brand_id,product_note,is_visible_for_affiliator,precision_status'])
             ->when($keyword !== '', fn ($query) => $query->where(function ($searchQuery) use ($keyword) {
                 $searchQuery
                     ->where('name', 'like', "%{$keyword}%")
@@ -778,7 +823,8 @@ class ProductController extends Controller
             }))
             ->when($categoryId, fn ($query) => $query->where('category_id', $categoryId))
             ->when($brandId, fn ($query) => $query->where('brand_id', $brandId))
-            ->when($phoneTypeId, fn ($query) => $query->where('phone_type_id', $phoneTypeId));
+            ->when($phoneTypeId, fn ($query) => $query->where('phone_type_id', $phoneTypeId))
+            ->when($hasPrecisionStatusFilter, fn ($query) => $query->where('precision_status', $precisionStatus));
 
         $representativeIds = (clone $baseQuery)
             ->selectRaw('MAX(id) as id')
@@ -789,8 +835,8 @@ class ProductController extends Controller
                 'category:id,name,image_path',
                 'brand:id,name,image_path',
                 'phoneType:id,name,antigores_size,camera_shape',
-                'master:id,name,brand_id,product_note,is_visible_for_affiliator',
-                'master.variants:id,product_master_id,category_id,phone_type_id',
+                'master:id,name,brand_id,product_note,is_visible_for_affiliator,precision_status',
+                'master.variants:id,product_master_id,category_id,phone_type_id,precision_status',
                 'master.variants.category:id,name,image_path',
                 'master.variants.phoneType:id,name,antigores_size,camera_shape',
             ])
@@ -798,10 +844,11 @@ class ProductController extends Controller
             ->orderByDesc('id');
     }
 
-    private function resolveOrCreateMaster(string $name, int $brandId, ?string $productNote, bool $isVisible): ProductMaster
+    private function resolveOrCreateMaster(string $name, int $brandId, ?string $productNote, bool $isVisible, string $precisionStatus): ProductMaster
     {
         $normalizedName = trim($name);
         $normalizedNote = trim((string) $productNote);
+        $normalizedStatus = ProductMaster::normalizePrecisionStatus($precisionStatus);
 
         $master = ProductMaster::query()
             ->where('brand_id', $brandId)
@@ -815,11 +862,19 @@ class ProductController extends Controller
                 'brand_id' => $brandId,
                 'product_note' => $normalizedNote !== '' ? $normalizedNote : null,
                 'is_visible_for_affiliator' => $isVisible,
+                'precision_status' => $normalizedStatus,
             ]);
         }
 
+        $updates = [];
         if ($isVisible && ! $master->is_visible_for_affiliator) {
-            $master->update(['is_visible_for_affiliator' => true]);
+            $updates['is_visible_for_affiliator'] = true;
+        }
+        if ($master->precision_status !== $normalizedStatus) {
+            $updates['precision_status'] = $normalizedStatus;
+        }
+        if (! empty($updates)) {
+            $master->update($updates);
         }
 
         return $master;
@@ -834,6 +889,16 @@ class ProductController extends Controller
                 'brand_id' => $master->brand_id,
                 'product_note' => $master->product_note,
                 'is_visible_for_affiliator' => $master->is_visible_for_affiliator,
+                'precision_status' => ProductMaster::normalizePrecisionStatus($master->precision_status),
             ]);
+    }
+
+    private function resolvePrecisionStatus(Product $product): string
+    {
+        if ($product->master?->precision_status) {
+            return ProductMaster::normalizePrecisionStatus($product->master->precision_status);
+        }
+
+        return ProductMaster::normalizePrecisionStatus($product->precision_status);
     }
 }
