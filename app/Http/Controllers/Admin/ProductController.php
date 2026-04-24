@@ -821,6 +821,7 @@ class ProductController extends Controller
         $phoneTypeId = $request->integer('phone_type_id');
         $precisionStatus = ProductMaster::normalizePrecisionStatus((string) $request->string('precision_status'));
         $hasPrecisionStatusFilter = $request->filled('precision_status');
+        $selectedCategoryCount = $categoryIds->count();
 
         $baseQuery = Product::query()
             ->with(['category:id,name,image_path', 'brand:id,name,image_path', 'phoneType:id,name,antigores_size,camera_shape', 'master:id,name,brand_id,product_note,is_visible_for_affiliator,precision_status'])
@@ -830,10 +831,25 @@ class ProductController extends Controller
                     ->orWhere('product_note', 'like', "%{$keyword}%")
                     ->orWhereHas('phoneType', fn ($phoneTypeQuery) => $phoneTypeQuery->where('antigores_size', 'like', "%{$keyword}%"));
             }))
-            ->when($categoryIds->isNotEmpty(), fn ($query) => $query->whereIn('category_id', $categoryIds->all()))
             ->when($brandId, fn ($query) => $query->where('brand_id', $brandId))
             ->when($phoneTypeId, fn ($query) => $query->where('phone_type_id', $phoneTypeId))
             ->when($hasPrecisionStatusFilter, fn ($query) => $query->where('precision_status', $precisionStatus));
+
+        if ($selectedCategoryCount > 0) {
+            $masterKeyExpression = 'COALESCE(product_master_id, id)';
+            $categoryPlaceholders = implode(',', array_fill(0, $selectedCategoryCount, '?'));
+
+            $matchingMasterKeys = Product::query()
+                ->selectRaw("{$masterKeyExpression} as master_key")
+                ->groupBy(DB::raw($masterKeyExpression))
+                ->havingRaw('COUNT(DISTINCT category_id) = ?', [$selectedCategoryCount])
+                ->havingRaw(
+                    "COUNT(DISTINCT CASE WHEN category_id IN ({$categoryPlaceholders}) THEN category_id END) = ?",
+                    [...$categoryIds->all(), $selectedCategoryCount]
+                );
+
+            $baseQuery->whereIn(DB::raw($masterKeyExpression), $matchingMasterKeys);
+        }
 
         $representativeIds = (clone $baseQuery)
             ->selectRaw('MAX(id) as id')
