@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\MasterBrandController as AdminMasterBrandControll
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
 use App\Http\Controllers\Admin\PhoneTypeController as AdminPhoneTypeController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\LcdGroupController as AdminLcdGroupController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\HomeController;
@@ -53,6 +54,7 @@ Route::middleware('auth')->group(function () {
         Route::post('phone-types/import', [AdminPhoneTypeController::class, 'import'])->name('phone-types.import');
         Route::resource('phone-types', AdminPhoneTypeController::class)->except('show');
         Route::resource('products', AdminProductController::class)->except('show');
+        Route::resource('lcd-groups', AdminLcdGroupController::class)->except('show');
         Route::resource('members', AdminMemberController::class)->only(['index', 'edit', 'update']);
     });
 });

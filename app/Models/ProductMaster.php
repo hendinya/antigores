@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ProductMaster extends Model
 {
@@ -57,5 +58,11 @@ class ProductMaster extends Model
     public function variants(): HasMany
     {
         return $this->hasMany(Product::class, 'product_master_id');
+    }
+
+    public function lcdGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(LcdGroup::class, 'lcd_group_product_master')
+            ->withTimestamps();
     }
 }

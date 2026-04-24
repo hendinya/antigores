@@ -385,6 +385,9 @@
                             <a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">Admin Products</a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.lcd-groups.*') ? 'active' : '' }}" href="{{ route('admin.lcd-groups.index') }}">Grup LCD</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.members.*') ? 'active' : '' }}" href="{{ route('admin.members.index') }}">Members</a>
                         </li>
                     @endif

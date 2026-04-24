@@ -262,6 +262,7 @@ class ProductController extends Controller
         }
         $master->variants()->whereNotIn('id', $keptVariantIds)->delete();
         $this->syncMasterToVariants($master);
+        $this->syncLcdGroupMembersFromMaster($master);
 
         return $this->redirectToIndex($request)->with('success', 'Produk berhasil diperbarui.');
     }
@@ -317,6 +318,7 @@ class ProductController extends Controller
         if ($master) {
             $master->update(['is_visible_for_affiliator' => $isVisible]);
             $this->syncMasterToVariants($master);
+            $this->syncLcdGroupMembersFromMaster($master);
         } else {
             $product->update(['is_visible_for_affiliator' => $isVisible]);
         }
@@ -343,6 +345,10 @@ class ProductController extends Controller
         if ($masterIds->isNotEmpty()) {
             ProductMaster::query()->whereIn('id', $masterIds)->update(['is_visible_for_affiliator' => $isVisible]);
             Product::query()->whereIn('product_master_id', $masterIds)->update(['is_visible_for_affiliator' => $isVisible]);
+            ProductMaster::query()
+                ->whereIn('id', $masterIds)
+                ->get()
+                ->each(fn (ProductMaster $master) => $this->syncLcdGroupMembersFromMaster($master));
         }
         $affected = $selectedProducts->count();
 
@@ -921,6 +927,60 @@ class ProductController extends Controller
                 'is_visible_for_affiliator' => $master->is_visible_for_affiliator,
                 'precision_status' => ProductMaster::normalizePrecisionStatus($master->precision_status),
             ]);
+    }
+
+    private function syncLcdGroupMembersFromMaster(ProductMaster $sourceMaster): void
+    {
+        $sourceGroupIds = $sourceMaster->lcdGroups()->pluck('lcd_groups.id');
+        if ($sourceGroupIds->isEmpty()) {
+            return;
+        }
+
+        $sourceVariants = $sourceMaster->variants()
+            ->get(['category_id', 'phone_type_id'])
+            ->keyBy('category_id');
+
+        ProductMaster::query()
+            ->whereKeyNot($sourceMaster->id)
+            ->whereHas('lcdGroups', fn ($query) => $query->whereIn('lcd_groups.id', $sourceGroupIds))
+            ->with('variants')
+            ->get()
+            ->each(function (ProductMaster $targetMaster) use ($sourceMaster, $sourceVariants): void {
+                $targetMaster->update([
+                    'product_note' => $sourceMaster->product_note,
+                    'is_visible_for_affiliator' => (bool) $sourceMaster->is_visible_for_affiliator,
+                    'precision_status' => ProductMaster::normalizePrecisionStatus($sourceMaster->precision_status),
+                ]);
+
+                $existingVariants = $targetMaster->variants->keyBy('category_id');
+                $keptVariantIds = [];
+                foreach ($sourceVariants as $sourceVariant) {
+                    $categoryId = (int) $sourceVariant->category_id;
+                    $phoneTypeId = (int) $sourceVariant->phone_type_id;
+                    $existingVariant = $existingVariants->get($categoryId);
+                    if ($existingVariant) {
+                        $existingVariant->update(['phone_type_id' => $phoneTypeId]);
+                        $keptVariantIds[] = $existingVariant->id;
+
+                        continue;
+                    }
+
+                    $created = Product::query()->create([
+                        'product_master_id' => $targetMaster->id,
+                        'name' => $targetMaster->name,
+                        'category_id' => $categoryId,
+                        'brand_id' => $targetMaster->brand_id,
+                        'phone_type_id' => $phoneTypeId,
+                        'product_note' => $targetMaster->product_note,
+                        'is_visible_for_affiliator' => $targetMaster->is_visible_for_affiliator,
+                        'precision_status' => ProductMaster::normalizePrecisionStatus($targetMaster->precision_status),
+                    ]);
+                    $keptVariantIds[] = $created->id;
+                }
+
+                $targetMaster->variants()->whereNotIn('id', $keptVariantIds)->delete();
+                $this->syncMasterToVariants($targetMaster);
+            });
     }
 
     private function resolvePrecisionStatus(Product $product): string
