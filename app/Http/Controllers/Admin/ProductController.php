@@ -931,8 +931,22 @@ class ProductController extends Controller
 
     private function syncLcdGroupMembersFromMaster(ProductMaster $sourceMaster): void
     {
-        $sourceGroupIds = $sourceMaster->lcdGroups()->pluck('lcd_groups.id');
+        $sourceGroupIds = DB::table('lcd_group_product_master')
+            ->where('product_master_id', $sourceMaster->id)
+            ->pluck('lcd_group_id')
+            ->unique()
+            ->values();
         if ($sourceGroupIds->isEmpty()) {
+            return;
+        }
+
+        $targetMasterIds = DB::table('lcd_group_product_master')
+            ->whereIn('lcd_group_id', $sourceGroupIds->all())
+            ->where('product_master_id', '!=', $sourceMaster->id)
+            ->pluck('product_master_id')
+            ->unique()
+            ->values();
+        if ($targetMasterIds->isEmpty()) {
             return;
         }
 
@@ -941,8 +955,7 @@ class ProductController extends Controller
             ->keyBy('category_id');
 
         ProductMaster::query()
-            ->whereKeyNot($sourceMaster->id)
-            ->whereHas('lcdGroups', fn ($query) => $query->whereIn('lcd_groups.id', $sourceGroupIds))
+            ->whereIn('id', $targetMasterIds->all())
             ->with('variants')
             ->get()
             ->each(function (ProductMaster $targetMaster) use ($sourceMaster, $sourceVariants): void {
