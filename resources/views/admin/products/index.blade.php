@@ -558,6 +558,13 @@
                     @php
                         $variants = $product->master?->variants ?? collect([$product]);
                         $showcaseNames = $variants->pluck('phoneType.name')->filter()->unique()->values();
+                        $precisionStatus = \App\Models\ProductMaster::normalizePrecisionStatus($product->master?->precision_status ?? $product->precision_status);
+                        $precisionStatusLabel = \App\Models\ProductMaster::precisionStatusLabel($precisionStatus);
+                        $precisionStatusBadgeClass = match ($precisionStatus) {
+                            \App\Models\ProductMaster::PRECISION_STATUS_PRESISI => 'text-bg-success',
+                            \App\Models\ProductMaster::PRECISION_STATUS_BELUM_PRESISI => 'text-bg-danger',
+                            default => 'text-bg-warning',
+                        };
                         $categoryImages = $variants
                             ->map(fn($variant) => ['name' => $variant->category->name ?? '-', 'url' => $variant->category?->image_path ? asset('storage/'.$variant->category->image_path) : null])
                             ->unique(fn($item) => ($item['name'] ?? '').'|'.($item['url'] ?? ''))
@@ -588,7 +595,7 @@
                             <div class="product-mobile-badges d-md-none">
                                 <span class="product-mobile-badge">{{ \Illuminate\Support\Str::limit($product->product_note, 40) ?: '-' }}</span>
                                 <span class="product-mobile-badge product-mobile-badge-outline">{{ $showcaseNames->implode(', ') ?: '-' }}</span>
-                                <span class="product-mobile-badge product-mobile-badge-outline">{{ \App\Models\ProductMaster::precisionStatusLabel($product->master?->precision_status ?? $product->precision_status) }}</span>
+                                <span class="badge {{ $precisionStatusBadgeClass }}">{{ $precisionStatusLabel }}</span>
                             </div>
                         </td>
                         <td class="product-cell-camera">{{ $product->phoneType->camera_shape ?? '-' }}</td>
@@ -603,7 +610,7 @@
                             </div>
                         </td>
                         <td class="product-cell-note">{{ \Illuminate\Support\Str::limit($product->product_note, 80) ?: '-' }}</td>
-                        <td class="product-cell-status">{{ \App\Models\ProductMaster::precisionStatusLabel($product->master?->precision_status ?? $product->precision_status) }}</td>
+                        <td class="product-cell-status"><span class="badge {{ $precisionStatusBadgeClass }}">{{ $precisionStatusLabel }}</span></td>
                         <td class="affiliator-visibility-cell product-cell-visibility">
                             <form method="POST" action="{{ route('admin.products.visibility', $product) }}" class="d-inline" data-confirm-visibility>
                                 @csrf
@@ -754,6 +761,17 @@
                     return;
                 }
 
+                const resolvePrecisionBadgeClass = (status) => {
+                    if (status === 'presisi') {
+                        return 'text-bg-success';
+                    }
+                    if (status === 'belum_presisi') {
+                        return 'text-bg-danger';
+                    }
+
+                    return 'text-bg-warning';
+                };
+
                 tableBody.innerHTML = items.map((item) => `
                     <tr>
                         <td class="product-cell-select">
@@ -772,7 +790,7 @@
                             <div class="product-mobile-badges d-md-none">
                                 <span class="product-mobile-badge">${item.product_note ? item.product_note : '-'}</span>
                                 <span class="product-mobile-badge product-mobile-badge-outline">${item.showcase ? item.showcase : '-'}</span>
-                                <span class="product-mobile-badge product-mobile-badge-outline">${item.precision_status_label ? item.precision_status_label : '-'}</span>
+                                <span class="badge ${resolvePrecisionBadgeClass(item.precision_status)}">${item.precision_status_label ? item.precision_status_label : '-'}</span>
                             </div>
                         </td>
                         <td class="product-cell-camera">${item.camera_shape ?? '-'}</td>
@@ -785,7 +803,7 @@
                             </div>
                         </td>
                         <td class="product-cell-note">${item.product_note ? item.product_note : '-'}</td>
-                        <td class="product-cell-status">${item.precision_status_label ? item.precision_status_label : '-'}</td>
+                        <td class="product-cell-status"><span class="badge ${resolvePrecisionBadgeClass(item.precision_status)}">${item.precision_status_label ? item.precision_status_label : '-'}</span></td>
                         <td class="affiliator-visibility-cell product-cell-visibility">
                             <form method="POST" action="${item.visibility_url}" class="d-inline" data-confirm-visibility>
                                 <input type="hidden" name="_token" value="${csrfToken}">
