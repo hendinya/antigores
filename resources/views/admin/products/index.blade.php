@@ -380,6 +380,13 @@
             }
         }
     </style>
+    @php
+        $selectedCategoryIds = collect(request()->input('category_ids', request()->filled('category_id') ? [request('category_id')] : []))
+            ->map(fn ($value) => (string) $value)
+            ->filter()
+            ->values()
+            ->all();
+    @endphp
     <div class="mb-3">
         <form id="adminProductsFilterForm" method="GET" action="{{ route('admin.products.index') }}" data-search-url="{{ route('admin.products.search') }}">
             <div id="adminProductsTopToolbar">
@@ -396,10 +403,9 @@
                 <div class="row g-2 align-items-end">
                     <div class="col-md-3">
                         <label class="form-label">Kategori</label>
-                        <select id="filter_category_id" name="category_id" class="form-select">
-                            <option value="">Semua kategori</option>
+                        <select id="filter_category_ids" name="category_ids[]" class="form-select" multiple>
                             @foreach($categories as $category)
-                                <option value="{{ $category->id }}" @selected((string) request('category_id') === (string) $category->id)>{{ $category->name }}</option>
+                                <option value="{{ $category->id }}" @selected(in_array((string) $category->id, $selectedCategoryIds, true))>{{ $category->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -669,7 +675,7 @@
             const filterForm = document.getElementById('adminProductsFilterForm');
             const searchUrl = filterForm.dataset.searchUrl;
             const keywordInput = filterForm.querySelector('input[name="keyword"]');
-            const categorySelect = document.getElementById('filter_category_id');
+            const categorySelect = document.getElementById('filter_category_ids');
             const brandSelect = document.getElementById('filter_brand_id');
             const showcaseSelect = filterForm.querySelector('select[name="phone_type_id"]');
             const precisionStatusSelect = filterForm.querySelector('select[name="precision_status"]');
@@ -857,13 +863,24 @@
             };
 
             const buildFilterParams = (page = null) => {
-                const params = new URLSearchParams({
-                    keyword: keywordInput.value.trim(),
-                    category_id: categorySelect.value,
-                    brand_id: brandSelect.value,
-                    phone_type_id: showcaseSelect.value,
-                    precision_status: precisionStatusSelect ? precisionStatusSelect.value : '',
-                });
+                const params = new URLSearchParams();
+                const keyword = keywordInput.value.trim();
+                if (keyword !== '') {
+                    params.set('keyword', keyword);
+                }
+                const selectedCategoryValues = Array.from(categorySelect.selectedOptions)
+                    .map((option) => option.value)
+                    .filter((value) => value !== '');
+                selectedCategoryValues.forEach((value) => params.append('category_ids[]', value));
+                if (brandSelect.value !== '') {
+                    params.set('brand_id', brandSelect.value);
+                }
+                if (showcaseSelect.value !== '') {
+                    params.set('phone_type_id', showcaseSelect.value);
+                }
+                if (precisionStatusSelect && precisionStatusSelect.value !== '') {
+                    params.set('precision_status', precisionStatusSelect.value);
+                }
 
                 if (page !== null) {
                     params.set('page', String(page));
@@ -909,7 +926,12 @@
                 importPanel.classList.toggle('d-none', !isVisible);
             };
 
-            const hasActiveAdvancedFilter = !!(categorySelect.value || brandSelect.value || showcaseSelect.value || (precisionStatusSelect && precisionStatusSelect.value));
+            const hasActiveAdvancedFilter = !!(
+                Array.from(categorySelect.selectedOptions).length ||
+                brandSelect.value ||
+                showcaseSelect.value ||
+                (precisionStatusSelect && precisionStatusSelect.value)
+            );
             setPanelVisibility(hasActiveAdvancedFilter);
 
             const handleSelectFilterChange = () => {

@@ -807,7 +807,16 @@ class ProductController extends Controller
     private function filteredQuery(Request $request): Builder
     {
         $keyword = trim((string) $request->string('keyword'));
-        $categoryId = $request->integer('category_id');
+        $categoryIds = collect($request->input('category_ids', []))
+            ->map(fn ($value) => (int) $value)
+            ->filter(fn (int $value) => $value > 0)
+            ->values();
+        if ($categoryIds->isEmpty() && $request->filled('category_id')) {
+            $legacyCategoryId = $request->integer('category_id');
+            if ($legacyCategoryId > 0) {
+                $categoryIds = collect([$legacyCategoryId]);
+            }
+        }
         $brandId = $request->integer('brand_id');
         $phoneTypeId = $request->integer('phone_type_id');
         $precisionStatus = ProductMaster::normalizePrecisionStatus((string) $request->string('precision_status'));
@@ -821,7 +830,7 @@ class ProductController extends Controller
                     ->orWhere('product_note', 'like', "%{$keyword}%")
                     ->orWhereHas('phoneType', fn ($phoneTypeQuery) => $phoneTypeQuery->where('antigores_size', 'like', "%{$keyword}%"));
             }))
-            ->when($categoryId, fn ($query) => $query->where('category_id', $categoryId))
+            ->when($categoryIds->isNotEmpty(), fn ($query) => $query->whereIn('category_id', $categoryIds->all()))
             ->when($brandId, fn ($query) => $query->where('brand_id', $brandId))
             ->when($phoneTypeId, fn ($query) => $query->where('phone_type_id', $phoneTypeId))
             ->when($hasPrecisionStatusFilter, fn ($query) => $query->where('precision_status', $precisionStatus));
