@@ -2,6 +2,7 @@
 
 @section('content')
     @php($returnTo = request('return_to', route('admin.lcd-groups.index')))
+    @php($selectedMasterIds = collect(old('product_master_ids', $lcdGroup->productMasters->pluck('id')->all()))->map(fn ($value) => (string) $value)->all())
     <h1 class="h5 mb-3">Edit Grup LCD</h1>
     <div class="card border-0 shadow-sm">
         <div class="card-body">
@@ -17,11 +18,6 @@
                     <label class="form-label">Catatan</label>
                     <textarea name="note" class="form-control" rows="2" placeholder="Opsional">{{ old('note', $lcdGroup->note) }}</textarea>
                 </div>
-                @php
-                    $selectedMasterIds = collect(old('product_master_ids', $lcdGroup->productMasters->pluck('id')->all()))
-                        ->map(fn ($value) => (string) $value)
-                        ->all();
-                @endphp
                 <div>
                     <label class="form-label">Pilih Produk Dalam Grup</label>
                     <select name="product_master_ids[]" class="form-select select2" multiple required data-placeholder="Pilih produk">
