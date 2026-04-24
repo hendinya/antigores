@@ -836,19 +836,24 @@ class ProductController extends Controller
             ->when($hasPrecisionStatusFilter, fn ($query) => $query->where('precision_status', $precisionStatus));
 
         if ($selectedCategoryCount > 0) {
-            $masterKeyExpression = 'COALESCE(product_master_id, id)';
-            $categoryPlaceholders = implode(',', array_fill(0, $selectedCategoryCount, '?'));
+            $masterKeyExpression = 'COALESCE(products.product_master_id, products.id)';
+            $selectedCategoryValues = $categoryIds->all();
 
-            $matchingMasterKeys = Product::query()
-                ->selectRaw("{$masterKeyExpression} as master_key")
-                ->groupBy(DB::raw($masterKeyExpression))
-                ->havingRaw('COUNT(DISTINCT category_id) = ?', [$selectedCategoryCount])
-                ->havingRaw(
-                    "COUNT(DISTINCT CASE WHEN category_id IN ({$categoryPlaceholders}) THEN category_id END) = ?",
-                    [...$categoryIds->all(), $selectedCategoryCount]
-                );
+            $baseQuery->whereNotExists(function ($subQuery) use ($masterKeyExpression, $selectedCategoryValues) {
+                $subQuery->selectRaw('1')
+                    ->from('products as category_check_outside')
+                    ->whereRaw("COALESCE(category_check_outside.product_master_id, category_check_outside.id) = {$masterKeyExpression}")
+                    ->whereNotIn('category_check_outside.category_id', $selectedCategoryValues);
+            });
 
-            $baseQuery->whereIn(DB::raw($masterKeyExpression), $matchingMasterKeys);
+            foreach ($selectedCategoryValues as $selectedCategoryId) {
+                $baseQuery->whereExists(function ($subQuery) use ($masterKeyExpression, $selectedCategoryId) {
+                    $subQuery->selectRaw('1')
+                        ->from('products as category_check_inside')
+                        ->whereRaw("COALESCE(category_check_inside.product_master_id, category_check_inside.id) = {$masterKeyExpression}")
+                        ->where('category_check_inside.category_id', $selectedCategoryId);
+                });
+            }
         }
 
         $representativeIds = (clone $baseQuery)
