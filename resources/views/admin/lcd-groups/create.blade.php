@@ -22,6 +22,9 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="small text-secondary">
+                    Produk yang sudah masuk grup lain tidak akan muncul di daftar ini.
+                </div>
                 <div class="d-flex gap-2">
                     <button class="btn btn-dark">Simpan</button>
                     <a href="{{ route('admin.lcd-groups.index') }}" class="btn btn-outline-secondary">Batal</a>

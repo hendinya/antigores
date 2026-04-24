@@ -30,6 +30,9 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="small text-secondary">
+                    Produk dari grup lain tidak dapat ditambahkan ke grup ini.
+                </div>
                 <div class="d-flex gap-2">
                     <button class="btn btn-dark">Update</button>
                     <a href="{{ $returnTo }}" class="btn btn-outline-secondary">Batal</a>

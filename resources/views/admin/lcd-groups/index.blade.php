@@ -6,6 +6,18 @@
         <a href="{{ route('admin.lcd-groups.create') }}" class="btn btn-dark btn-sm">Tambah Grup</a>
     </div>
 
+    <form method="GET" action="{{ route('admin.lcd-groups.index') }}" class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="input-group">
+                <input type="text" name="keyword" class="form-control" value="{{ $keyword }}" placeholder="Cari nama grup, catatan, atau nama produk">
+                <button class="btn btn-dark" type="submit">Cari</button>
+            </div>
+            <div class="d-flex mt-2">
+                <a href="{{ route('admin.lcd-groups.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+            </div>
+        </div>
+    </form>
+
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <table class="table mb-0">
