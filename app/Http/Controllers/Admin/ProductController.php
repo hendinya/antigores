@@ -182,11 +182,13 @@ class ProductController extends Controller
         $master = $product->master;
         $variants = $master?->variants()->with(['category:id,name', 'phoneType:id,name'])->orderBy('category_id')->get()
             ?? collect([$product->load(['category:id,name', 'phoneType:id,name'])]);
+        $lcdGroupSyncImpact = $this->buildLcdGroupSyncImpact($master);
 
         return view('admin.products.edit', [
             'product' => $product,
             'master' => $master,
             'variants' => $variants,
+            'lcdGroupSyncImpact' => $lcdGroupSyncImpact,
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'brands' => Brand::query()->whereNull('category_id')->orderBy('name')->get(['id', 'name']),
             'phoneTypes' => PhoneType::query()->orderBy('name')->get(['id', 'name']),
@@ -988,6 +990,73 @@ class ProductController extends Controller
                 $targetMaster->variants()->whereNotIn('id', $keptVariantIds)->delete();
                 $this->syncMasterToVariants($targetMaster);
             });
+    }
+
+    private function buildLcdGroupSyncImpact(?ProductMaster $sourceMaster): array
+    {
+        if (! $sourceMaster) {
+            return [
+                'group_names' => [],
+                'affected_products' => [],
+                'affected_count' => 0,
+                'sync_fields' => [],
+            ];
+        }
+
+        $sourceGroupIds = DB::table('lcd_group_product_master')
+            ->where('product_master_id', $sourceMaster->id)
+            ->pluck('lcd_group_id')
+            ->unique()
+            ->values();
+        if ($sourceGroupIds->isEmpty()) {
+            return [
+                'group_names' => [],
+                'affected_products' => [],
+                'affected_count' => 0,
+                'sync_fields' => [],
+            ];
+        }
+
+        $groupNames = LcdGroup::query()
+            ->whereIn('id', $sourceGroupIds->all())
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($name) => trim((string) $name))
+            ->values()
+            ->all();
+        $targetMasterIds = DB::table('lcd_group_product_master')
+            ->whereIn('lcd_group_id', $sourceGroupIds->all())
+            ->where('product_master_id', '!=', $sourceMaster->id)
+            ->pluck('product_master_id')
+            ->unique()
+            ->values();
+        $affectedProducts = ProductMaster::query()
+            ->with('brand:id,name')
+            ->whereIn('id', $targetMasterIds->all())
+            ->orderBy('name')
+            ->get(['id', 'name', 'brand_id'])
+            ->map(function (ProductMaster $master): string {
+                $productName = trim((string) $master->name);
+                $brandName = trim((string) ($master->brand->name ?? ''));
+                if ($brandName === '') {
+                    return $productName;
+                }
+
+                return $productName.' ('.$brandName.')';
+            })
+            ->values()
+            ->all();
+
+        return [
+            'group_names' => $groupNames,
+            'affected_products' => $affectedProducts,
+            'affected_count' => count($affectedProducts),
+            'sync_fields' => [
+                'Catatan produk',
+                'Status presisi',
+                'Varian kategori + etalase (termasuk tambah/hapus varian kategori)',
+            ],
+        ];
     }
 
     private function resolvePrecisionStatus(Product $product): string

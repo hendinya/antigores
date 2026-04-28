@@ -17,6 +17,23 @@
     <h1 class="h5 mb-3">Edit Produk</h1>
     <div class="card border-0 shadow-sm">
         <div class="card-body">
+            @if(($lcdGroupSyncImpact['affected_count'] ?? 0) > 0)
+                <div class="alert alert-warning">
+                    <div class="fw-semibold mb-1">Perubahan akan tersinkron ke produk lain di Grup LCD</div>
+                    <div class="small mb-1">
+                        Grup terkait:
+                        {{ implode(', ', $lcdGroupSyncImpact['group_names'] ?? []) }}
+                    </div>
+                    <div class="small mb-1">
+                        Data yang ikut berubah saat klik Update:
+                        {{ implode('; ', $lcdGroupSyncImpact['sync_fields'] ?? []) }}.
+                    </div>
+                    <div class="small">
+                        Produk terdampak ({{ $lcdGroupSyncImpact['affected_count'] }}):
+                        {{ implode(', ', $lcdGroupSyncImpact['affected_products'] ?? []) }}
+                    </div>
+                </div>
+            @endif
             <form method="POST" action="{{ route('admin.products.update', $product) }}" class="vstack gap-3">
                 @csrf
                 @method('PUT')
