@@ -318,7 +318,6 @@ class ProductController extends Controller
         if ($master) {
             $master->update(['is_visible_for_affiliator' => $isVisible]);
             $this->syncMasterToVariants($master);
-            $this->syncLcdGroupMembersFromMaster($master);
         } else {
             $product->update(['is_visible_for_affiliator' => $isVisible]);
         }
@@ -345,10 +344,6 @@ class ProductController extends Controller
         if ($masterIds->isNotEmpty()) {
             ProductMaster::query()->whereIn('id', $masterIds)->update(['is_visible_for_affiliator' => $isVisible]);
             Product::query()->whereIn('product_master_id', $masterIds)->update(['is_visible_for_affiliator' => $isVisible]);
-            ProductMaster::query()
-                ->whereIn('id', $masterIds)
-                ->get()
-                ->each(fn (ProductMaster $master) => $this->syncLcdGroupMembersFromMaster($master));
         }
         $affected = $selectedProducts->count();
 
@@ -961,7 +956,6 @@ class ProductController extends Controller
             ->each(function (ProductMaster $targetMaster) use ($sourceMaster, $sourceVariants): void {
                 $targetMaster->update([
                     'product_note' => $sourceMaster->product_note,
-                    'is_visible_for_affiliator' => (bool) $sourceMaster->is_visible_for_affiliator,
                     'precision_status' => ProductMaster::normalizePrecisionStatus($sourceMaster->precision_status),
                 ]);
 
