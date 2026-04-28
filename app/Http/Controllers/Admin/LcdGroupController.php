@@ -122,6 +122,7 @@ class LcdGroupController extends Controller
 
         return ProductMaster::query()
             ->with('brand:id,name')
+            ->whereHas('variants')
             ->orderBy('name')
             ->get()
             ->groupBy(fn (ProductMaster $master) => $this->masterOptionKey($master->name, (int) $master->brand_id))
@@ -178,6 +179,7 @@ class LcdGroupController extends Controller
 
         return ProductMaster::query()
             ->whereIn('brand_id', $brandIds)
+            ->whereHas('variants')
             ->get(['id', 'name', 'brand_id'])
             ->filter(fn (ProductMaster $master) => $selectedKeys->contains($this->masterOptionKey((string) $master->name, (int) $master->brand_id)))
             ->pluck('id')
