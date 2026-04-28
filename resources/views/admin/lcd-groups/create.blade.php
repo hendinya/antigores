@@ -54,6 +54,8 @@
         (() => {
             const rowContainer = document.getElementById('product-rows');
             const addButton = document.getElementById('add-product-row');
+            const firstSelect = rowContainer.querySelector('.js-product-select');
+            const selectOptionsHtml = firstSelect ? firstSelect.innerHTML : '';
 
             const updateRemoveButtons = () => {
                 const rows = rowContainer.querySelectorAll('.product-row');
@@ -72,34 +74,48 @@
                 return selects.some((select) => select !== currentSelect && select.value === value);
             };
 
-            const bindRowEvents = (row) => {
-                const select = row.querySelector('.js-product-select');
-                const removeBtn = row.querySelector('.js-remove-row');
-
-                select.addEventListener('change', () => {
-                    if (hasDuplicateValue(select)) {
-                        alert('Produk sudah dipilih pada baris lain.');
-                        select.value = '';
-                    }
-                });
-
-                removeBtn.addEventListener('click', () => {
-                    row.remove();
-                    updateRemoveButtons();
-                });
+            const buildRow = () => {
+                const row = document.createElement('div');
+                row.className = 'd-flex gap-2 product-row';
+                row.innerHTML = `
+                    <select name="product_master_ids[]" class="form-select js-product-select" required>
+                        ${selectOptionsHtml}
+                    </select>
+                    <button type="button" class="btn btn-outline-danger js-remove-row">Hapus</button>
+                `;
+                row.querySelector('.js-product-select').value = '';
+                return row;
             };
 
             addButton.addEventListener('click', () => {
-                const firstRow = rowContainer.querySelector('.product-row');
-                const newRow = firstRow.cloneNode(true);
-                const newSelect = newRow.querySelector('.js-product-select');
-                newSelect.value = '';
+                const newRow = buildRow();
                 rowContainer.appendChild(newRow);
-                bindRowEvents(newRow);
                 updateRemoveButtons();
             });
 
-            rowContainer.querySelectorAll('.product-row').forEach(bindRowEvents);
+            rowContainer.addEventListener('change', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLSelectElement) || !target.classList.contains('js-product-select')) {
+                    return;
+                }
+                if (hasDuplicateValue(target)) {
+                    alert('Produk sudah dipilih pada baris lain.');
+                    target.value = '';
+                }
+            });
+
+            rowContainer.addEventListener('click', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement) || !target.classList.contains('js-remove-row')) {
+                    return;
+                }
+                const row = target.closest('.product-row');
+                if (row) {
+                    row.remove();
+                    updateRemoveButtons();
+                }
+            });
+
             updateRemoveButtons();
         })();
     </script>
