@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\LcdGroup;
 use App\Models\PhoneType;
 use App\Models\Product;
 use App\Models\ProductMaster;
