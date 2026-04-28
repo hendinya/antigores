@@ -21,12 +21,6 @@
                     <div id="product-rows" class="vstack gap-2">
                         @foreach($selectedRows as $selectedId)
                             <div class="d-flex gap-2 product-row">
-                                <input
-                                    type="text"
-                                    class="form-control js-product-filter"
-                                    placeholder="Cari produk..."
-                                    autocomplete="off"
-                                >
                                 <select name="product_master_ids[]" class="form-select js-product-select" required>
                                     <option value="" disabled @selected($selectedId === '')>Pilih produk</option>
                                     @foreach($productMasterOptions as $masterOption)
@@ -84,12 +78,6 @@
                 const row = document.createElement('div');
                 row.className = 'd-flex gap-2 product-row';
                 row.innerHTML = `
-                    <input
-                        type="text"
-                        class="form-control js-product-filter"
-                        placeholder="Cari produk..."
-                        autocomplete="off"
-                    >
                     <select name="product_master_ids[]" class="form-select js-product-select" required>
                         ${selectOptionsHtml}
                     </select>
@@ -99,26 +87,24 @@
                 return row;
             };
 
+            const initSelect2 = (selectElement) => {
+                $(selectElement).select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder: 'Pilih produk',
+                    allowClear: true,
+                });
+            };
+
             addButton.addEventListener('click', () => {
                 const newRow = buildRow();
                 rowContainer.appendChild(newRow);
+                const newSelect = newRow.querySelector('.js-product-select');
+                if (newSelect) {
+                    initSelect2(newSelect);
+                }
                 updateRemoveButtons();
             });
-
-            const filterOptions = (select, keyword) => {
-                const normalized = keyword.trim().toLowerCase();
-                Array.from(select.options).forEach((option, index) => {
-                    if (index === 0) {
-                        option.hidden = false;
-                        return;
-                    }
-                    const matched = normalized === '' || option.text.toLowerCase().includes(normalized);
-                    option.hidden = !matched;
-                    if (option.selected) {
-                        option.hidden = false;
-                    }
-                });
-            };
 
             rowContainer.addEventListener('change', (event) => {
                 const target = event.target;
@@ -128,23 +114,8 @@
                 if (hasDuplicateValue(target)) {
                     alert('Produk sudah dipilih pada baris lain.');
                     target.value = '';
+                    $(target).trigger('change.select2');
                 }
-            });
-
-            rowContainer.addEventListener('input', (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLInputElement) || !target.classList.contains('js-product-filter')) {
-                    return;
-                }
-                const row = target.closest('.product-row');
-                if (!row) {
-                    return;
-                }
-                const select = row.querySelector('.js-product-select');
-                if (!(select instanceof HTMLSelectElement)) {
-                    return;
-                }
-                filterOptions(select, target.value);
             });
 
             rowContainer.addEventListener('click', (event) => {
@@ -159,6 +130,7 @@
                 }
             });
 
+            rowContainer.querySelectorAll('.js-product-select').forEach((select) => initSelect2(select));
             updateRemoveButtons();
         })();
     </script>
