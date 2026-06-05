@@ -52,6 +52,7 @@ class ProductController extends Controller
             'items' => $products->getCollection()->map(function (Product $product): array {
                 $variants = $product->master?->variants?->values() ?? collect([$product]);
                 $showcases = $variants->pluck('phoneType.name')->filter()->unique()->values();
+                $childSkus = $variants->pluck('sku')->filter()->unique()->values();
                 $cameraShapes = $variants->pluck('phoneType.camera_shape')->filter()->unique()->values();
                 $antigoresSizes = $variants->pluck('phoneType.antigores_size')->filter()->unique()->values();
                 $categoryImages = $variants
@@ -65,6 +66,7 @@ class ProductController extends Controller
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
+                    'sku_summary' => $childSkus->implode(', '),
                     'product_note' => e(Str::limit((string) $product->product_note, 80)),
                     'precision_status' => $this->resolvePrecisionStatus($product),
                     'precision_status_label' => ProductMaster::precisionStatusLabel($this->resolvePrecisionStatus($product)),
@@ -831,9 +833,12 @@ class ProductController extends Controller
             ->with(['category:id,name,image_path', 'brand:id,name,image_path', 'phoneType:id,name,antigores_size,camera_shape', 'master:id,name,brand_id,product_note,is_visible_for_affiliator,precision_status'])
             ->when($keyword !== '', fn ($query) => $query->where(function ($searchQuery) use ($keyword) {
                 $searchQuery
-                    ->where('name', 'like', "%{$keyword}%")
+                    ->where('sku', 'like', "%{$keyword}%")
+                    ->orWhere('name', 'like', "%{$keyword}%")
                     ->orWhere('product_note', 'like', "%{$keyword}%")
-                    ->orWhereHas('phoneType', fn ($phoneTypeQuery) => $phoneTypeQuery->where('antigores_size', 'like', "%{$keyword}%"));
+                    ->orWhereHas('phoneType', fn ($phoneTypeQuery) => $phoneTypeQuery
+                        ->where('antigores_size', 'like', "%{$keyword}%")
+                        ->orWhere('sku', 'like', "%{$keyword}%"));
             }))
             ->when($brandId, fn ($query) => $query->where('brand_id', $brandId))
             ->when($phoneTypeId, fn ($query) => $query->where('phone_type_id', $phoneTypeId))
@@ -870,7 +875,7 @@ class ProductController extends Controller
                 'brand:id,name,image_path',
                 'phoneType:id,name,antigores_size,camera_shape',
                 'master:id,name,brand_id,product_note,is_visible_for_affiliator,precision_status',
-                'master.variants:id,product_master_id,category_id,phone_type_id,precision_status',
+                'master.variants:id,sku,product_master_id,category_id,phone_type_id,precision_status',
                 'master.variants.category:id,name,image_path',
                 'master.variants.phoneType:id,name,antigores_size,camera_shape',
             ])

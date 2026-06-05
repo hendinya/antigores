@@ -10,6 +10,9 @@
     <h1 class="h5 mb-3">Tambah Produk</h1>
     <div class="card border-0 shadow-sm">
         <div class="card-body">
+            <div class="alert alert-info">
+                SKU child untuk setiap varian produk akan digenerate otomatis saat data disimpan.
+            </div>
             <form method="POST" action="{{ route('admin.products.store') }}" class="vstack gap-3">
                 @csrf
                 <div>

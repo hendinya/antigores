@@ -207,6 +207,7 @@
                 background: #fff;
                 overflow: visible;
             }
+            #adminProductsTableBody .product-cell-sku,
             #adminProductsTableBody .product-cell-camera,
             #adminProductsTableBody .product-cell-size,
             #adminProductsTableBody .product-cell-showcase,
@@ -392,7 +393,7 @@
             <div id="adminProductsTopToolbar">
                 <div id="adminProductsKeywordWrap">
                     <span class="keyword-icon">🔎</span>
-                    <input type="text" name="keyword" class="form-control" value="{{ request('keyword') }}" placeholder="Cari nama produk / ukuran antigores">
+                        <input type="text" name="keyword" class="form-control" value="{{ request('keyword') }}" placeholder="Cari SKU produk, nama produk, catatan, SKU etalase, atau ukuran antigores">
                     <span class="keyword-spacer"></span>
                     <button type="button" class="keyword-inline-btn d-none" id="adminProductsClearKeywordBtn" aria-label="Reset keyword">✕</button>
                     <button type="button" class="keyword-inline-btn" id="adminProductsTogglePanelBtn" aria-label="Buka panel filter">☰</button>
@@ -549,6 +550,7 @@
                     </th>
                     <th>Gambar</th>
                     <th>Nama</th>
+                    <th>SKU Child</th>
                     <th>Bentuk Kamera</th>
                     <th>Ukuran Antigores</th>
                     <th>Etalase</th>
@@ -563,6 +565,7 @@
                 @forelse($products as $product)
                     @php
                         $variants = $product->master?->variants ?? collect([$product]);
+                        $childSkus = $variants->pluck('sku')->filter()->unique()->values();
                         $showcaseNames = $variants->pluck('phoneType.name')->filter()->unique()->values();
                         $precisionStatus = \App\Models\ProductMaster::normalizePrecisionStatus($product->master?->precision_status ?? $product->precision_status);
                         $precisionStatusLabel = \App\Models\ProductMaster::precisionStatusLabel($precisionStatus);
@@ -599,11 +602,13 @@
                             <div class="product-name-title">{{ $product->name }}</div>
                             <div class="product-name-sub d-md-none">{{ $product->phoneType->camera_shape ?? '-' }} {{ $product->phoneType->antigores_size ?? '-' }}</div>
                             <div class="product-mobile-badges d-md-none">
+                                <span class="product-mobile-badge product-mobile-badge-outline">{{ $childSkus->implode(', ') ?: '-' }}</span>
                                 <span class="product-mobile-badge">{{ \Illuminate\Support\Str::limit($product->product_note, 40) ?: '-' }}</span>
                                 <span class="product-mobile-badge product-mobile-badge-outline">{{ $showcaseNames->implode(', ') ?: '-' }}</span>
                                 <span class="badge {{ $precisionStatusBadgeClass }}">{{ $precisionStatusLabel }}</span>
                             </div>
                         </td>
+                        <td class="product-cell-sku">{{ $childSkus->implode(', ') ?: '-' }}</td>
                         <td class="product-cell-camera">{{ $product->phoneType->camera_shape ?? '-' }}</td>
                         <td class="product-cell-size">{{ $product->phoneType->antigores_size ?? '-' }}</td>
                         <td class="product-cell-showcase">{{ $showcaseNames->implode(', ') ?: '-' }}</td>
@@ -657,7 +662,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="11" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>
+                    <tr><td colspan="12" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -762,7 +767,7 @@
 
             const renderRows = (items) => {
                 if (!items.length) {
-                    tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-secondary">Belum ada produk.</td></tr>';
                     updateBulkSelectionState();
                     return;
                 }
@@ -794,11 +799,13 @@
                             <div class="product-name-title">${item.name}</div>
                             <div class="product-name-sub d-md-none">${item.camera_shape ?? '-'} ${item.antigores_size ?? '-'}</div>
                             <div class="product-mobile-badges d-md-none">
+                                <span class="product-mobile-badge product-mobile-badge-outline">${item.sku_summary ? item.sku_summary : '-'}</span>
                                 <span class="product-mobile-badge">${item.product_note ? item.product_note : '-'}</span>
                                 <span class="product-mobile-badge product-mobile-badge-outline">${item.showcase ? item.showcase : '-'}</span>
                                 <span class="badge ${resolvePrecisionBadgeClass(item.precision_status)}">${item.precision_status_label ? item.precision_status_label : '-'}</span>
                             </div>
                         </td>
+                        <td class="product-cell-sku">${item.sku_summary ? item.sku_summary : '-'}</td>
                         <td class="product-cell-camera">${item.camera_shape ?? '-'}</td>
                         <td class="product-cell-size">${item.antigores_size ?? '-'}</td>
                         <td class="product-cell-showcase">${item.showcase}</td>

@@ -34,6 +34,14 @@
                     </div>
                 </div>
             @endif
+            @if(isset($variants) && collect($variants)->isNotEmpty())
+                <div class="alert alert-info">
+                    <div class="fw-semibold mb-1">SKU child saat ini</div>
+                    <div class="small">
+                        {{ collect($variants)->map(fn ($variant) => trim((string) ($variant->sku ?? '-')).' - '.trim((string) ($variant->category->name ?? 'Tanpa kategori')).' / '.trim((string) ($variant->phoneType->name ?? 'Tanpa etalase')))->implode(', ') }}
+                    </div>
+                </div>
+            @endif
             <form method="POST" action="{{ route('admin.products.update', $product) }}" class="vstack gap-3">
                 @csrf
                 @method('PUT')

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PhoneType;
+use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -301,8 +302,9 @@ class PhoneTypeController extends Controller
     {
         while (true) {
             $candidate = (string) now()->timestamp.random_int(100, 999);
-            $exists = PhoneType::query()->where('sku', $candidate)->exists();
-            if (! $exists) {
+            $existsInPhoneTypes = PhoneType::query()->where('sku', $candidate)->exists();
+            $existsInProducts = Product::query()->where('sku', $candidate)->exists();
+            if (! $existsInPhoneTypes && ! $existsInProducts) {
                 return $candidate;
             }
 
