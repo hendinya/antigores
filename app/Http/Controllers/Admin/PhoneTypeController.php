@@ -106,7 +106,7 @@ class PhoneTypeController extends Controller
         $writer = new Writer;
         $writer->openToFile($path);
         $writer->addRow(Row::fromValues(['sku', 'nama_etalase', 'bentuk_kamera', 'ukuran_antigores', 'masteran', 'link_belanja']));
-        $writer->addRow(Row::fromValues(['ET-000001', 'AI-99', 'Tengah', '160 x 75', 'Contoh masteran etalase', 'https://example.com/produk-1']));
+        $writer->addRow(Row::fromValues(['1760000000123', 'AI-99', 'Tengah', '160 x 75', 'Contoh masteran etalase', 'https://example.com/produk-1']));
         $writer->close();
 
         return response()->download(
@@ -294,11 +294,19 @@ class PhoneTypeController extends Controller
             return;
         }
 
-        $phoneType->update(['sku' => $this->generateSku((int) $phoneType->id)]);
+        $phoneType->update(['sku' => $this->generateSku()]);
     }
 
-    private function generateSku(int $id): string
+    private function generateSku(): string
     {
-        return 'ET-'.str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+        while (true) {
+            $candidate = (string) now()->timestamp.random_int(100, 999);
+            $exists = PhoneType::query()->where('sku', $candidate)->exists();
+            if (! $exists) {
+                return $candidate;
+            }
+
+            usleep(20000);
+        }
     }
 }
