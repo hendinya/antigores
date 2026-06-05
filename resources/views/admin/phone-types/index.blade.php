@@ -9,7 +9,7 @@
     <form method="GET" action="{{ route('admin.phone-types.index') }}" class="card border-0 shadow-sm mb-3">
         <div class="card-body">
             <div class="input-group">
-                <input type="text" id="phoneTypesKeywordInput" name="keyword" class="form-control" value="{{ $keyword }}" placeholder="Cari nama etalase atau ukuran antigores">
+                <input type="text" id="phoneTypesKeywordInput" name="keyword" class="form-control" value="{{ $keyword }}" placeholder="Cari SKU, nama etalase, atau ukuran antigores">
                 <button class="btn btn-dark" type="submit">Cari</button>
             </div>
             <div class="d-flex gap-2 mt-2 flex-wrap">
@@ -40,6 +40,7 @@
             <table class="table mb-0">
                 <thead>
                 <tr>
+                    <th>SKU</th>
                     <th>Nama Etalase</th>
                     <th>Bentuk Kamera</th>
                     <th>Ukuran Antigores</th>
@@ -51,6 +52,7 @@
                 <tbody>
                 @forelse($phoneTypes as $phoneType)
                     <tr>
+                        <td>{{ $phoneType->sku ?? '-' }}</td>
                         <td>{{ $phoneType->name }}</td>
                         <td>{{ $phoneType->camera_shape ?? '-' }}</td>
                         <td>{{ $phoneType->antigores_size ?? '-' }}</td>
@@ -80,7 +82,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="text-center py-4 text-secondary">Belum ada etalase.</td></tr>
+                    <tr><td colspan="7" class="text-center py-4 text-secondary">Belum ada etalase.</td></tr>
                 @endforelse
                 </tbody>
             </table>

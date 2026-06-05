@@ -9,6 +9,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rule;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use OpenSpout\Writer\XLSX\Writer;
@@ -39,6 +40,7 @@ class PhoneTypeController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'sku' => ['nullable', 'string', 'max:32', Rule::unique('phone_types', 'sku')],
             'name' => ['required', 'string', 'max:255'],
             'antigores_size' => ['required', 'string', 'max:100'],
             'camera_shape' => ['required', 'string', 'max:100'],
@@ -46,7 +48,9 @@ class PhoneTypeController extends Controller
             'masteran' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        PhoneType::create($validated);
+        $payload = $this->normalizePhoneTypePayload($validated);
+        $phoneType = PhoneType::query()->create($payload);
+        $this->ensureSkuExists($phoneType);
 
         return redirect()->route('admin.phone-types.index')->with('success', 'Etalase berhasil ditambahkan.');
     }
@@ -59,6 +63,7 @@ class PhoneTypeController extends Controller
     public function update(Request $request, PhoneType $phoneType): RedirectResponse
     {
         $validated = $request->validate([
+            'sku' => ['nullable', 'string', 'max:32', Rule::unique('phone_types', 'sku')->ignore($phoneType->id)],
             'name' => ['required', 'string', 'max:255'],
             'antigores_size' => ['required', 'string', 'max:100'],
             'camera_shape' => ['required', 'string', 'max:100'],
@@ -66,7 +71,9 @@ class PhoneTypeController extends Controller
             'masteran' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $phoneType->update($validated);
+        $payload = $this->normalizePhoneTypePayload($validated);
+        $phoneType->update($payload);
+        $this->ensureSkuExists($phoneType);
 
         return $this->redirectToIndex($request)->with('success', 'Etalase berhasil diperbarui.');
     }
@@ -98,8 +105,8 @@ class PhoneTypeController extends Controller
         $path = storage_path('app/template-import-etalase.xlsx');
         $writer = new Writer;
         $writer->openToFile($path);
-        $writer->addRow(Row::fromValues(['nama_etalase', 'bentuk_kamera', 'ukuran_antigores', 'masteran', 'link_belanja']));
-        $writer->addRow(Row::fromValues(['AI-99', 'Tengah', '160 x 75', 'Contoh masteran etalase', 'https://example.com/produk-1']));
+        $writer->addRow(Row::fromValues(['sku', 'nama_etalase', 'bentuk_kamera', 'ukuran_antigores', 'masteran', 'link_belanja']));
+        $writer->addRow(Row::fromValues(['ET-000001', 'AI-99', 'Tengah', '160 x 75', 'Contoh masteran etalase', 'https://example.com/produk-1']));
         $writer->close();
 
         return response()->download(
@@ -117,10 +124,11 @@ class PhoneTypeController extends Controller
 
         $writer = new Writer;
         $writer->openToFile($path);
-        $writer->addRow(Row::fromValues(['nama_etalase', 'bentuk_kamera', 'ukuran_antigores', 'masteran', 'link_belanja']));
+        $writer->addRow(Row::fromValues(['sku', 'nama_etalase', 'bentuk_kamera', 'ukuran_antigores', 'masteran', 'link_belanja']));
 
         foreach ($phoneTypes as $phoneType) {
             $writer->addRow(Row::fromValues([
+                (string) ($phoneType->sku ?? ''),
                 $phoneType->name,
                 (string) ($phoneType->camera_shape ?? ''),
                 (string) ($phoneType->antigores_size ?? ''),
@@ -150,6 +158,7 @@ class PhoneTypeController extends Controller
         $updated = 0;
         $skipped = 0;
         $line = 1;
+        $hasSkuColumn = false;
 
         DB::beginTransaction();
         try {
@@ -158,19 +167,25 @@ class PhoneTypeController extends Controller
                 foreach ($sheet->getRowIterator() as $row) {
                     $line++;
                     if ($isHeader) {
+                        $headerCells = collect($row->toArray())
+                            ->map(fn ($value) => strtolower(trim((string) $value)))
+                            ->filter()
+                            ->values();
+                        $hasSkuColumn = $headerCells->contains('sku');
                         $isHeader = false;
 
                         continue;
                     }
 
                     $cells = $row->toArray();
-                    $name = trim((string) ($cells[0] ?? ''));
-                    $cameraShape = trim((string) ($cells[1] ?? ''));
-                    $antigoresSize = trim((string) ($cells[2] ?? ''));
-                    $masteran = trim((string) ($cells[3] ?? ''));
-                    $shoppingLink = trim((string) ($cells[4] ?? ''));
+                    $sku = trim((string) ($hasSkuColumn ? ($cells[0] ?? '') : ''));
+                    $name = trim((string) ($cells[$hasSkuColumn ? 1 : 0] ?? ''));
+                    $cameraShape = trim((string) ($cells[$hasSkuColumn ? 2 : 1] ?? ''));
+                    $antigoresSize = trim((string) ($cells[$hasSkuColumn ? 3 : 2] ?? ''));
+                    $masteran = trim((string) ($cells[$hasSkuColumn ? 4 : 3] ?? ''));
+                    $shoppingLink = trim((string) ($cells[$hasSkuColumn ? 5 : 4] ?? ''));
 
-                    if ($name === '' && $cameraShape === '' && $antigoresSize === '' && $masteran === '' && $shoppingLink === '') {
+                    if ($sku === '' && $name === '' && $cameraShape === '' && $antigoresSize === '' && $masteran === '' && $shoppingLink === '') {
                         continue;
                     }
                     if ($name === '' || $cameraShape === '' || $antigoresSize === '') {
@@ -185,13 +200,29 @@ class PhoneTypeController extends Controller
                         'masteran' => $masteran !== '' ? $masteran : null,
                         'shopping_link' => $shoppingLink !== '' ? $shoppingLink : null,
                     ];
+                    if ($sku !== '') {
+                        $payload['sku'] = $sku;
+                    }
 
                     $existing = PhoneType::query()->whereRaw('LOWER(name) = ?', [strtolower($name)])->first();
+                    if ($sku !== '') {
+                        $skuUsedByOther = PhoneType::query()
+                            ->where('sku', $sku)
+                            ->when($existing, fn ($query) => $query->where('id', '!=', $existing->id))
+                            ->exists();
+                        if ($skuUsedByOther) {
+                            $skipped++;
+
+                            continue;
+                        }
+                    }
                     if ($existing) {
                         $existing->update(array_merge(['name' => $name], $payload));
+                        $this->ensureSkuExists($existing);
                         $updated++;
                     } else {
-                        PhoneType::query()->create(array_merge(['name' => $name], $payload));
+                        $createdPhoneType = PhoneType::query()->create(array_merge(['name' => $name], $payload));
+                        $this->ensureSkuExists($createdPhoneType);
                         $created++;
                     }
                 }
@@ -239,11 +270,35 @@ class PhoneTypeController extends Controller
             ->when($keyword !== '', function ($query) use ($keyword) {
                 $query->where(function ($searchQuery) use ($keyword) {
                     $searchQuery
-                        ->where('name', 'like', "%{$keyword}%")
+                        ->where('sku', 'like', "%{$keyword}%")
+                        ->orWhere('name', 'like', "%{$keyword}%")
                         ->orWhere('antigores_size', 'like', "%{$keyword}%")
                         ->orWhere('camera_shape', 'like', "%{$keyword}%")
                         ->orWhere('masteran', 'like', "%{$keyword}%");
                 });
             });
+    }
+
+    private function normalizePhoneTypePayload(array $validated): array
+    {
+        $sku = trim((string) ($validated['sku'] ?? ''));
+        $validated['sku'] = $sku !== '' ? $sku : null;
+
+        return $validated;
+    }
+
+    private function ensureSkuExists(PhoneType $phoneType): void
+    {
+        $sku = trim((string) ($phoneType->sku ?? ''));
+        if ($sku !== '') {
+            return;
+        }
+
+        $phoneType->update(['sku' => $this->generateSku((int) $phoneType->id)]);
+    }
+
+    private function generateSku(int $id): string
+    {
+        return 'ET-'.str_pad((string) $id, 6, '0', STR_PAD_LEFT);
     }
 }

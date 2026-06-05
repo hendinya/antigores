@@ -10,6 +10,10 @@
                 @method('PUT')
                 <input type="hidden" name="redirect_to" value="{{ $returnTo }}">
                 <div>
+                    <label class="form-label">SKU (Opsional)</label>
+                    <input type="text" name="sku" class="form-control" value="{{ old('sku', $phoneType->sku) }}" placeholder="Kosongkan untuk generate otomatis">
+                </div>
+                <div>
                     <label class="form-label">Nama Etalase</label>
                     <input type="text" name="name" class="form-control" value="{{ old('name', $phoneType->name) }}" required>
                 </div>

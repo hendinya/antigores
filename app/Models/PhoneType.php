@@ -10,7 +10,7 @@ class PhoneType extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'antigores_size', 'camera_shape', 'shopping_link', 'masteran'];
+    protected $fillable = ['sku', 'name', 'antigores_size', 'camera_shape', 'shopping_link', 'masteran'];
 
     public function products(): HasMany
     {

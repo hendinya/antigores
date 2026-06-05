@@ -7,6 +7,10 @@
             <form method="POST" action="{{ route('admin.phone-types.store') }}" class="vstack gap-3">
                 @csrf
                 <div>
+                    <label class="form-label">SKU (Opsional)</label>
+                    <input type="text" name="sku" class="form-control" value="{{ old('sku') }}" placeholder="Kosongkan untuk generate otomatis">
+                </div>
+                <div>
                     <label class="form-label">Nama Etalase</label>
                     <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
                 </div>
